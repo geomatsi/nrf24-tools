@@ -16,7 +16,7 @@ endif (WITH_NRF24_TEST)
 
 FIND_PATH(NRF24_INCLUDE_DIR
 NAMES RF24.h nRF24L01.h
-PATHS /usr/include/nrf24 usr/include/linux/nrf24
+PATHS /usr/include/nrf24 /usr/include/linux/nrf24
 )
 
 ## find libraries
