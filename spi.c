@@ -1,69 +1,68 @@
-#include <stdint.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <getopt.h>
-#include <fcntl.h>
-#include <stdio.h>
+#include <string.h>
 
-#include <linux/types.h>
-#include <inttypes.h>
-
-#include <linux/spi/spidev.h>
-#include <sys/ioctl.h>
+#include "spi.h"
 
 /* */
 
-uint32_t speed = 2000000;
+static uint32_t speed = 1000000;
 
-uint8_t mode = 0;
-uint8_t bits = 8;
-uint8_t lsb = 0;
+#ifdef SUNXI_KERNEL /* linux-sunxi-3.4 definitions */
+static uint8_t mode = SPI_LOOP; /* hack for linux-sunxi-3.4 */
+#else /* linux-master-4.0.0 definitions */
+static uint8_t mode = 0;
+#endif
 
-int fd;
+static uint8_t bits = 8;
+static uint8_t lsb = 0;
+
+static int fd;
 
 /* */
 
-void pcduino_spi_init(char *spidev)
+void pcduino_spi_open(char *spidev)
 {
-	int ret;
-
 	fd = open(spidev, O_RDWR);
 	if (fd < 0)
 	{
 		perror("can't open device");
-		abort();
+		return;
 	}
+}
+
+void pcduino_spi_init(void)
+{
+	int ret;
 
 	ret = ioctl(fd, SPI_IOC_WR_MODE, &mode);
 	if (ret == -1)
 	{
 		perror("can't set spi mode");
-		abort();
+		return;
 	}
 
 	ret = ioctl(fd, SPI_IOC_WR_LSB_FIRST, &lsb);
 	if (ret == -1)
 	{
 		perror("can't set bit order");
-		abort();
+		return;
 	}
 
 	ret = ioctl(fd, SPI_IOC_WR_BITS_PER_WORD, &bits);
 	if (ret == -1)
 	{
 		perror("can't set bits per word");
-		abort();
+		return;
 	}
 
 	ret = ioctl(fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed);
 	if (ret == -1)
 	{
 		perror("can't set max speed hz");
-		abort();
+		return;
 	}
 }
 
-void pcduino_spi_info(char *spidev)
+void pcduino_spi_info(void)
 {
 	uint8_t m, b, o;
 	uint32_t s;
@@ -74,28 +73,28 @@ void pcduino_spi_info(char *spidev)
 	if (ret == -1)
 	{
 		perror("can't read spi mode");
-		abort();
+		return;
 	}
 
 	ret = ioctl(fd, SPI_IOC_RD_LSB_FIRST, &o);
 	if (ret == -1)
 	{
 		perror("can't read bit order");
-		abort();
+		return;
 	}
 
 	ret = ioctl(fd, SPI_IOC_RD_BITS_PER_WORD, &b);
 	if (ret == -1)
 	{
 		perror("can't read bits per word");
-		abort();
+		return;
 	}
 
 	ret = ioctl(fd, SPI_IOC_RD_MAX_SPEED_HZ, &s);
 	if (ret == -1)
 	{
 		perror("can't set max speed hz");
-		abort();
+		return;
 	}
 
 	printf("spi setup: mode = %u lsb = %u bits = %u speed = %u Hz\n",
@@ -104,25 +103,49 @@ void pcduino_spi_info(char *spidev)
 	return;
 }
 
-uint8_t pcduino_spi_xfer(uint8_t txdata)
+/* full-duplex */
+uint8_t pcduino_spi_xfer_fdx(uint8_t txdata)
 {
-	struct spi_ioc_transfer xfer;
-	uint8_t rxdata;
+	struct spi_ioc_transfer xfer[1];
+    uint8_t rxdata = 0xff;
 	int ret;
 
-	xfer.tx_buf = (unsigned long) &txdata;
-	xfer.rx_buf = (unsigned long) &rxdata;
-	xfer.len = 1;
+    memset(xfer, 0, sizeof(xfer));
 
-	xfer.bits_per_word = bits;
-	xfer.speed_hz = speed;
-	xfer.delay_usecs = 0;
+	xfer[0].tx_buf = (unsigned long) &txdata;
+	xfer[0].rx_buf = (unsigned long) &rxdata;
+	xfer[0].len = 1;
 
-	ret = ioctl(fd, SPI_IOC_MESSAGE(1), &xfer);
-	if (ret < 1)
+	ret = ioctl(fd, SPI_IOC_MESSAGE(1), xfer);
+	if (ret < 0)
 	{
 		perror("can't perform spi transfer");
-		abort();
+		return rxdata;
+	}
+
+	return rxdata;
+}
+
+/* half-duplex */
+uint8_t pcduino_spi_xfer_hdx(uint8_t txdata)
+{
+	struct spi_ioc_transfer xfer[2];
+    uint8_t rxdata = 0;
+	int ret;
+
+    memset(xfer, 0, sizeof(xfer));
+
+	xfer[0].tx_buf = (unsigned long) &txdata;
+	xfer[0].len = 1;
+
+	xfer[1].rx_buf = (unsigned long) &rxdata;
+	xfer[1].len = 1;
+
+	ret = ioctl(fd, SPI_IOC_MESSAGE(2), xfer);
+	if (ret < 0)
+	{
+		perror("can't perform spi transfer");
+		return rxdata;
 	}
 
 	return rxdata;

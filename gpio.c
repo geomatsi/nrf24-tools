@@ -1,16 +1,10 @@
-#include <stdint.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include <getopt.h>
-#include <fcntl.h>
-#include <stdio.h>
+/* */
 
-#include <linux/types.h>
-#include <inttypes.h>
+#include "gpio.h"
 
 /* */
 
-void pcduino_gpio_setup(int port, int dir)
+void pcduino_gpio_setup(int port, char *name, int dir)
 {
 	char gpio[128];
 	FILE *file;
@@ -20,25 +14,25 @@ void pcduino_gpio_setup(int port, int dir)
 	if (!file)
 	{
 		perror("can't open gpio export");
-		abort();
+		return;
 	}
 
 	ret = fprintf(file, "%d\n", port);
 	if (ret < 0)
 	{
 		perror("can't export gpio");
-		abort();
+		return;
 	}
 
 	fclose(file);
 
-	sprintf(gpio, "/sys/class/gpio/gpio%d/direction", port);
+	sprintf(gpio, "/sys/class/gpio/%s/direction", name);
 
 	file = fopen(gpio, "w");
 	if (!file)
 	{
 		perror("can't open gpio direction");
-		abort();
+		return;
 	}
 
 	if (dir == 0)
@@ -47,7 +41,7 @@ void pcduino_gpio_setup(int port, int dir)
 		if (ret < 0)
 		{
 			perror("can't write gpio direction");
-			abort();
+			return;
 		}
 	}
 	else
@@ -56,7 +50,7 @@ void pcduino_gpio_setup(int port, int dir)
 		if (ret < 0)
 		{
 			perror("can't write gpio direction");
-			abort();
+			return;
 		}
 	}
 
@@ -72,39 +66,39 @@ void pcduino_gpio_close(int port)
 	if (!file)
 	{
 		perror("can't open gpio unexport");
-		abort();
+		return;
 	}
 
 	ret = fprintf(file, "%d\n", port);
 	if (ret < 0)
 	{
 		perror("can't unexport gpio");
-		abort();
+		return;
 	}
 
 	fclose(file);
 }
 
-int pcduino_gpio_read(int port)
+int pcduino_gpio_read(char *name)
 {
 	char gpio[128];
 	int ret, val;
 	FILE *file;
 
-	sprintf(gpio, "/sys/class/gpio/gpio%d/value", port);
+	sprintf(gpio, "/sys/class/gpio/%s/value", name);
 
 	file = fopen(gpio, "r");
 	if (!file)
 	{
 		perror("can't open gpio value for read");
-		abort();
+		return;
 	}
 
 	ret = fscanf(file, "%d", &val);
 	if (ret < 0)
 	{
 		perror("can't read gpio value");
-		abort();
+		return;
 	}
 
 	fclose(file);
@@ -112,24 +106,38 @@ int pcduino_gpio_read(int port)
 	return val;
 }
 
-void pcduino_gpio_write(int port, int value)
+void pcduino_gpio_write(char *name, int value)
 {
 	char gpio[128];
 	FILE *file;
 	int ret;
 
-	sprintf(gpio, "/sys/class/gpio/gpio%d/value", port);
+	sprintf(gpio, "/sys/class/gpio/%s/value", name);
 	file = fopen(gpio, "w");
 	if (!file)
 	{
 		perror("can't open gpio value for write");
-		abort();
+		return;
 	}
 
 	if (value == 0)
-		fprintf(file, "0\n");
+    {
+        ret = fprintf(file, "0\n");
+        if (ret < 0)
+        {
+            perror("can't write 0 to gpio");
+            return;
+        }
+    }
 	else
-		fprintf(file, "1\n");
+    {
+        ret = fprintf(file, "1\n");
+        if (ret < 0)
+        {
+            perror("can't write 1 to gpio");
+            return;
+        }
+    }
 
 	fclose(file);
 }
