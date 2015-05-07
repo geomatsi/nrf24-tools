@@ -1,4 +1,5 @@
 #include <inttypes.h>
+#include <stdbool.h>
 #include <getopt.h>
 #include <unistd.h>
 #include <string.h>
@@ -102,10 +103,25 @@ struct rf24 nrf = {
 void nrf24_test_usage(char *name)
 {
 	printf("usage: %s [-h] -d <spidev>\n", name);
-	printf("\t-h, --help			this help message\n");
-	printf("\t-d, --device <spidev>		spidev for nRF24L01, default is '/dev/spidev0.0\n");
-	printf("\t--peer1 <addr>			not yet supported\n");
-	printf("\t--peer2 <addr>			not yet supported\n");
+	printf("\t-h, --help\t\t\tthis help message\n");
+	printf("\t-d, --device <spidev>\t\tspidev for nRF24L01, default is '/dev/spidev0.0\n");
+	printf("\t--dynamic-payload\t\tenable dynamic payload support\n");
+	printf("\t--payload-length <length>\tset static payload length to 0..32 bytes (default value is 32)\n");
+	printf("\t--peer1 <addr>\t\t\tnot yet supported\n");
+	printf("\t--peer2 <addr>\t\t\tnot yet supported\n");
+}
+
+dump_data(char *b, int n)
+{
+    int p;
+
+    for(p = 0; p < n; p++) {
+        printf("0x%02x ", *(b + p));
+        if ((p > 0) && ((p % 64) == 0))
+            printf("\n");
+    }
+
+    printf("\n");
 }
 
 /* */
@@ -115,7 +131,9 @@ int main(int argc, char *argv[])
 	uint8_t addr0[] = {'E', 'F', 'C', 'L', 'I'};
 	uint8_t addr1[] = {'E', 'F', 'S', 'N', '1'};
 
-	uint8_t buf[20];
+	uint8_t recv_buffer[32];
+	bool dynamic_payload = false;
+	int recv_length = 32;
 
 	uint32_t more_data;
 	uint8_t pipe;
@@ -132,12 +150,14 @@ int main(int argc, char *argv[])
 	};
 
 	int opt;
-	const char opts[] = "d:h";
+	const char opts[] = "d:h:";
     const struct option longopts[] = {
         {"device", required_argument, NULL, 'd'},
-        {"help",   optional_argument, NULL, 'h'},
-        {"peer1",  required_argument, NULL, '0'},
-        {"peer2",  required_argument, NULL, '1'},
+        {"peer1", required_argument, NULL, '0'},
+        {"peer2", required_argument, NULL, '1'},
+        {"dynamic-payload", no_argument, NULL, '2'},
+        {"payload-length", required_argument, NULL, '3'},
+        {"help", optional_argument, NULL, 'h'},
         {NULL,}
     };
 
@@ -154,7 +174,18 @@ int main(int argc, char *argv[])
 				if (strlen(optarg) >= 5)
 					strncpy(peer[1], optarg, 5);
 				break;
-			case 'h':
+			case '2':
+				dynamic_payload = true;
+				break;
+			case '3':
+                recv_length = atoi(optarg);
+                if ((recv_length < 1) || (recv_length > 32)) {
+                    printf("ERR: invalid static payload length %d\n", recv_length);
+                    nrf24_test_usage(argv[0]);
+                    exit(-1);
+                }
+                break;
+            case 'h':
 			default:
 				nrf24_test_usage(argv[0]);
 				exit(0);
@@ -175,7 +206,10 @@ int main(int argc, char *argv[])
 
 	/* */
 
-	rf24_set_payload_size(pnrf, sizeof(buf));
+    if (dynamic_payload)
+	    rf24_enable_dynamic_payloads(pnrf);
+    else
+	    rf24_set_payload_size(pnrf, recv_length);
 
 	rf24_open_reading_pipe(pnrf, 0x0 /* pipe number */, addr0);
 	rf24_open_reading_pipe(pnrf, 0x1 /* pipe number */, addr1);
@@ -194,9 +228,15 @@ int main(int argc, char *argv[])
 				printf("WARN: invalid pipe number 0x%02x\n", (int) pipe);
 			} else {
 				printf("INFO: data ready in pipe 0x%02x\n", pipe);
-				memset(buf, 0x0, sizeof(buf));
-				more_data = rf24_read(pnrf, buf, sizeof(buf));
-				printf("INFO: data [%s]\n", buf);
+				memset(recv_buffer, 0x0, sizeof(recv_buffer));
+
+                if (dynamic_payload)
+				    recv_length = rf24_get_dynamic_payload_size(pnrf);
+
+				more_data = rf24_read(pnrf, recv_buffer, recv_length);
+				printf("INFO: dump received %d bytes\n", recv_length);
+                dump_data((char *)recv_buffer, recv_length);
+
 				if (!more_data)
 					printf("WARN: RX_FIFO not empty: %d\n", more_data);
 			}
