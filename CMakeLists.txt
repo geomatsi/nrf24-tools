@@ -10,7 +10,6 @@ find_package(ProtobufC REQUIRED)
 ## options
 
 option (WITH_NRF24_TEST	"Build nRF24L01 test tool"	ON)
-option (SUNXI_KERNEL	"Build for linux-sunxi-3.4"	ON)
 
 ## executable targets
 
@@ -53,6 +52,8 @@ target_link_libraries(nrf24_test ${PROTOBUFC_LIBRARIES})
 
 ## misc
 
-if (SUNXI_KERNEL)
-	add_definitions(-DSUNXI_KERNEL)
-endif (SUNXI_KERNEL)
+# set path to spidev.h header for specific kernel
+if(DEFINED KERNEL_DIR)
+    include_directories(${KERNEL_DIR}/include/linux/spi)
+endif(DEFINED KERNEL_DIR)
+

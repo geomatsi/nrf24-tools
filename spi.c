@@ -6,11 +6,8 @@
 
 static uint32_t speed = 1000000;
 
-#ifdef SUNXI_KERNEL /* linux-sunxi-3.4 definitions */
-static uint8_t mode = SPI_LOOP; /* hack for linux-sunxi-3.4 */
-#else /* linux-master-4.0.0 definitions */
-static uint8_t mode = 0;
-#endif
+/* hack for linux-sunxi-3.4 */
+static uint8_t mode = SPI_LOOP;
 
 static uint8_t bits = 8;
 static uint8_t lsb = 0;

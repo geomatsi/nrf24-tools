@@ -13,11 +13,7 @@
 
 #include <sys/ioctl.h>
 
-#ifdef SUNXI_KERNEL
-#include "spidev/spidev_sunxi_3.4.h"
-#else
-#include "spidev/spidev_upstream_4.0.h"
-#endif
+#include <spidev.h>
 
 /* */
 

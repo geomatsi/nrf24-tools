@@ -14,8 +14,6 @@
 
 /* */
 
-#ifdef SUNXI_KERNEL /* linux-sunxi-3.4 definitions */
-
 #define PCDUINO_NRF24_CE        7
 #define PCDUINO_NRF24_CE_NAME   "gpio7_ph9"
 
@@ -29,24 +27,6 @@
 #define PCDUINO_NRF24_IRQ_NAME  "gpio2_ph7"
 
 #define PCDUINO_NRF24_SPI	"/dev/spidev0.0"
-
-#else /* linux-master-4.0.0 definitions */
-
-#define PCDUINO_NRF24_CE        233
-#define PCDUINO_NRF24_CE_NAME   "gpio233"
-
-#define PCDUINO_NRF24_CSN       234
-#define PCDUINO_NRF24_CSN_NAME  "gpio234"
-
-#define PCDUINO_RFM69_CSN       229
-#define PCDUINO_RFM69_CSN_NAME  "gpio229"
-
-#define PCDUINO_NRF24_IRQ       231
-#define PCDUINO_NRF24_IRQ_NAME  "gpio231"
-
-#define PCDUINO_NRF24_SPI	"/dev/spidev"
-
-#endif
 
 /* */
 
