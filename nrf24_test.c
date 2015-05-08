@@ -10,6 +10,8 @@
 
 #include "RF24.h"
 
+#include "msg.pb-c.h"
+
 /* */
 
 #ifdef SUNXI_KERNEL /* linux-sunxi-3.4 definitions */
@@ -107,6 +109,7 @@ void nrf24_test_usage(char *name)
 	printf("\t-d, --device <spidev>\t\tspidev for nRF24L01, default is '/dev/spidev0.0\n");
 	printf("\t--dynamic-payload\t\tenable dynamic payload support\n");
 	printf("\t--payload-length <length>\tset static payload length to 0..32 bytes (default value is 32)\n");
+	printf("\t--parse-message\t\t\tparse messages according to protobuf description\n");
 	printf("\t--peer1 <addr>\t\t\tnot yet supported\n");
 	printf("\t--peer2 <addr>\t\t\tnot yet supported\n");
 }
@@ -124,6 +127,28 @@ dump_data(char *b, int n)
     printf("\n");
 }
 
+void decode_data(char *b, int n)
+{
+	SensorDataList *msg;
+	int i;
+
+	msg = sensor_data_list__unpack(NULL, n, b);
+
+	if (msg == NULL) {
+		printf("error: can't unpack message\n");
+		return;
+	}
+
+	for (i = 0; i < msg->n_sensor; i++) {
+		printf("sensor[%lu] = %lu\n",
+			msg->sensor[i]->type, msg->sensor[i]->data);
+	}
+
+	sensor_data_list__free_unpacked(msg, NULL);
+
+    return;
+}
+
 /* */
 
 int main(int argc, char *argv[])
@@ -131,8 +156,10 @@ int main(int argc, char *argv[])
 	uint8_t addr0[] = {'E', 'F', 'C', 'L', 'I'};
 	uint8_t addr1[] = {'E', 'F', 'S', 'N', '1'};
 
-	uint8_t recv_buffer[32];
 	bool dynamic_payload = false;
+	bool parse_message = false;
+
+	uint8_t recv_buffer[32];
 	int recv_length = 32;
 
 	uint32_t more_data;
@@ -157,6 +184,7 @@ int main(int argc, char *argv[])
         {"peer2", required_argument, NULL, '1'},
         {"dynamic-payload", no_argument, NULL, '2'},
         {"payload-length", required_argument, NULL, '3'},
+        {"parse-message", no_argument, NULL, '4'},
         {"help", optional_argument, NULL, 'h'},
         {NULL,}
     };
@@ -185,6 +213,9 @@ int main(int argc, char *argv[])
                     exit(-1);
                 }
                 break;
+			case '4':
+				parse_message = true;
+				break;
             case 'h':
 			default:
 				nrf24_test_usage(argv[0]);
@@ -235,7 +266,12 @@ int main(int argc, char *argv[])
 
 				more_data = rf24_read(pnrf, recv_buffer, recv_length);
 				printf("INFO: dump received %d bytes\n", recv_length);
-                dump_data((char *)recv_buffer, recv_length);
+
+				if (parse_message) {
+					decode_data((char *)recv_buffer, recv_length);
+				} else {
+					dump_data((char *)recv_buffer, recv_length);
+				}
 
 				if (!more_data)
 					printf("WARN: RX_FIFO not empty: %d\n", more_data);
