@@ -7,6 +7,7 @@
 #include <getopt.h>
 #include <fcntl.h>
 #include <stdio.h>
+#include <errno.h>
 
 #include <linux/types.h>
 #include <inttypes.h>
@@ -17,9 +18,9 @@
 
 /* */
 
-void pcduino_spi_open(char *spidev);
-void pcduino_spi_init(void);
-void pcduino_spi_info(void);
+int pcduino_spi_open(char *spidev);
+int pcduino_spi_init(void);
+int pcduino_spi_info(void);
 void pcduino_spi_close(void);
 
 uint8_t pcduino_spi_xfer_fdx(uint8_t txdata);

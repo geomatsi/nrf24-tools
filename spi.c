@@ -16,88 +16,98 @@ static int fd;
 
 /* */
 
-void pcduino_spi_open(char *spidev)
+int pcduino_spi_open(char *spidev)
 {
+	printf("open spi device %s\n", spidev);
+
 	fd = open(spidev, O_RDWR);
 	if (fd < 0)
 	{
 		perror("can't open device");
-		return;
+		return -errno;
 	}
+
+	return 0;
 }
 
-void pcduino_spi_init(void)
+int pcduino_spi_init(void)
 {
 	int ret;
+
+	printf("init spi device\n");
 
 	ret = ioctl(fd, SPI_IOC_WR_MODE, &mode);
 	if (ret == -1)
 	{
 		perror("can't set spi mode");
-		return;
+		return -errno;
 	}
 
 	ret = ioctl(fd, SPI_IOC_WR_LSB_FIRST, &lsb);
 	if (ret == -1)
 	{
 		perror("can't set bit order");
-		return;
+		return -errno;
 	}
 
 	ret = ioctl(fd, SPI_IOC_WR_BITS_PER_WORD, &bits);
 	if (ret == -1)
 	{
 		perror("can't set bits per word");
-		return;
+		return -errno;
 	}
 
 	ret = ioctl(fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed);
 	if (ret == -1)
 	{
 		perror("can't set max speed hz");
-		return;
+		return -errno;
 	}
+
+	return 0;
 }
 
-void pcduino_spi_info(void)
+int pcduino_spi_info(void)
 {
 	uint8_t m, b, o;
 	uint32_t s;
 
 	int ret;
 
+	printf("get spi device info\n");
+
 	ret = ioctl(fd, SPI_IOC_RD_MODE, &m);
 	if (ret == -1)
 	{
 		perror("can't read spi mode");
-		return;
+		return -errno;
 	}
 
 	ret = ioctl(fd, SPI_IOC_RD_LSB_FIRST, &o);
 	if (ret == -1)
 	{
 		perror("can't read bit order");
-		return;
+		return -errno;
 	}
 
 	ret = ioctl(fd, SPI_IOC_RD_BITS_PER_WORD, &b);
 	if (ret == -1)
 	{
 		perror("can't read bits per word");
-		return;
+		return -errno;
 	}
 
 	ret = ioctl(fd, SPI_IOC_RD_MAX_SPEED_HZ, &s);
 	if (ret == -1)
 	{
-		perror("can't set max speed hz");
-		return;
+		perror("can't read max speed hz");
+		return -errno;
 	}
 
 	printf("spi setup: mode = %u lsb = %u bits = %u speed = %u Hz\n",
 		(unsigned int) m, (unsigned int) o, (unsigned int) b, (unsigned int) s);
 
-	return;
+	return 0;
 }
 
 /* full-duplex */

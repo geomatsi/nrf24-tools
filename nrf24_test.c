@@ -51,14 +51,21 @@ int radio_gpio_setup(void)
 	return 0;
 }
 
-void radio_spi_setup(char *name)
+int radio_spi_setup(char *name)
 {
-	pcduino_spi_open(name);
-	pcduino_spi_info();
-	pcduino_spi_init();
-	pcduino_spi_info();
+	if (0 > pcduino_spi_open(name))
+		return -1;
 
-	return;
+	if (0 > pcduino_spi_info())
+		return -1;
+
+	if (0 > pcduino_spi_init())
+		return -1;
+
+	if (0 > pcduino_spi_info())
+		return -1;
+
+	return 0;
 }
 
 /* */
@@ -220,7 +227,10 @@ int main(int argc, char *argv[])
 		exit(-1);
 	}
 
-	radio_spi_setup(spidev_name);
+	if (0 > radio_spi_setup(spidev_name)) {
+		printf("ERR: can't setup spi\n");
+		exit(-1);
+	}
 
 	/* setup nRF24L01 */
 
