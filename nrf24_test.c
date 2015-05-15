@@ -30,15 +30,25 @@
 
 /* */
 
-void radio_gpio_setup(void)
+int radio_gpio_setup(void)
 {
-	pcduino_gpio_setup(PCDUINO_NRF24_CE, PCDUINO_NRF24_CE_NAME, DIR_OUT);
-	pcduino_gpio_setup(PCDUINO_NRF24_CSN, PCDUINO_NRF24_CSN_NAME, DIR_OUT);
-	pcduino_gpio_setup(PCDUINO_NRF24_IRQ, PCDUINO_NRF24_IRQ_NAME, DIR_IN);
+	if (0 > pcduino_gpio_setup(PCDUINO_NRF24_CE, PCDUINO_NRF24_CE_NAME, DIR_OUT))
+		return -1;
+
+	if (0 > pcduino_gpio_setup(PCDUINO_NRF24_CSN, PCDUINO_NRF24_CSN_NAME, DIR_OUT))
+		return -1;
+
+	if (0 > pcduino_gpio_setup(PCDUINO_NRF24_IRQ, PCDUINO_NRF24_IRQ_NAME, DIR_IN))
+		return -1;
 
     /* disable spi chip select for RFM69 */
-	pcduino_gpio_setup(PCDUINO_RFM69_CSN, PCDUINO_RFM69_CSN_NAME, DIR_OUT);
-	pcduino_gpio_write(PCDUINO_RFM69_CSN_NAME, 1);
+	if (0 > pcduino_gpio_setup(PCDUINO_RFM69_CSN, PCDUINO_RFM69_CSN_NAME, DIR_OUT))
+		return -1;
+
+	if (0 > pcduino_gpio_write(PCDUINO_RFM69_CSN_NAME, 1))
+		return -1;
+
+	return 0;
 }
 
 void radio_spi_setup(char *name)
@@ -55,12 +65,12 @@ void radio_spi_setup(char *name)
 
 void f_csn(int level)
 {
-	pcduino_gpio_write(PCDUINO_NRF24_CSN_NAME, level);
+	(void) pcduino_gpio_write(PCDUINO_NRF24_CSN_NAME, level);
 }
 
 void f_ce(int level)
 {
-	pcduino_gpio_write(PCDUINO_NRF24_CE_NAME, level);
+	(void) pcduino_gpio_write(PCDUINO_NRF24_CE_NAME, level);
 }
 
 void f_spi_set_speed(int khz)
@@ -205,7 +215,11 @@ int main(int argc, char *argv[])
 
 	/* setup SPI and GPIO */
 
-	radio_gpio_setup();
+	if (0 > radio_gpio_setup()) {
+		printf("ERR: can't setup gpio\n");
+		exit(-1);
+	}
+
 	radio_spi_setup(spidev_name);
 
 	/* setup nRF24L01 */
