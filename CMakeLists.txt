@@ -9,32 +9,38 @@ find_package(ProtobufC REQUIRED)
 
 ## options
 
-option (WITH_NRF24_SPIDEV_TEST "Build nRF24L01 test tool for spidev" ON)
-option (WITH_NRF24_UM232H_TEST "Build nRF24L01 test tool for UM232H" ON)
+option (WITH_NRF24_TEST "Build nRF24L01 basic test tool" ON)
 option (WITH_NRF24_MOSQUITTO_TEST "Build nRF24L01 mosquitto test publisher" OFF)
 
-## driver sources
+## select nRF24 connector: SPIDEV/UM232H/...
 
 file(GLOB_RECURSE UM232H_SRCS ${PROJECT_SOURCE_DIR}/drv/um232h/*.c)
 file(GLOB_RECURSE SPIDEV_SRCS ${PROJECT_SOURCE_DIR}/drv/spidev/*.c)
 
+set(NRF24_CONN "UM232H" CACHE STRING "nRF24x connector chosen by the user at CMake configure time")
+
+if ( NRF24_CONN STREQUAL "SPIDEV" )
+	set (CONN_SRCS ${SPIDEV_SRCS})
+	message(STATUS "nRF24 connector: ${NRF24_CONN} (${CONN_SRCS})")
+endif ()
+
+if ( NRF24_CONN STREQUAL "UM232H" )
+	set (CONN_SRCS ${UM232H_SRCS})
+	message(STATUS "nRF24 connector: ${NRF24_CONN} (${CONN_SRCS})")
+endif ()
+
 ## executable targets
 
-if (WITH_NRF24_SPIDEV_TEST)
+if (WITH_NRF24_TEST)
 	PROTOBUFC_GENERATE_C(PROTO_SRCS PROTO_HDRS msg.proto)
     add_executable(
-        nrf24_spidev_test nrf24_test.c delay.c ${SPIDEV_SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
-endif (WITH_NRF24_SPIDEV_TEST)
-
-if (WITH_NRF24_UM232H_TEST)
-	PROTOBUFC_GENERATE_C(PROTO_SRCS PROTO_HDRS msg.proto)
-    add_executable(nrf24_um232h_test nrf24_test.c delay.c ${UM232H_SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
-endif (WITH_NRF24_UM232H_TEST)
+        nrf24_test nrf24_test.c delay.c ${CONN_SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
+endif ()
 
 if (WITH_NRF24_MOSQUITTO_TEST)
 	PROTOBUFC_GENERATE_C(PROTO_SRCS PROTO_HDRS msg.proto)
-    add_executable(nrf24_mosquitto_test nrf24_mosquitto_test.c delay.c ${UM232H_SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
-endif (WITH_NRF24_MOSQUITTO_TEST)
+    add_executable(nrf24_mosquitto_test nrf24_mosquitto_test.c delay.c ${CONN_SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
+endif ()
 
 ## find headers
 
@@ -89,28 +95,32 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 ## set libraries paths
 
-if (WITH_NRF24_SPIDEV_TEST)
-    target_link_libraries(nrf24_spidev_test ${NRF24_LIBRARY})
-    target_link_libraries(nrf24_spidev_test ${PROTOBUFC_LIBRARIES})
-endif (WITH_NRF24_SPIDEV_TEST)
+if (WITH_NRF24_TEST)
+    target_link_libraries(nrf24_test ${NRF24_LIBRARY})
+    target_link_libraries(nrf24_test ${PROTOBUFC_LIBRARIES})
 
-if (WITH_NRF24_UM232H_TEST)
-    target_link_libraries(nrf24_um232h_test ${NRF24_LIBRARY})
-    target_link_libraries(nrf24_um232h_test ${PROTOBUFC_LIBRARIES})
-    target_link_libraries(nrf24_um232h_test ${FTDI_LIBRARY})
-endif (WITH_NRF24_UM232H_TEST)
+	if ( NRF24_CONN STREQUAL "UM232H" )
+		target_link_libraries(nrf24_test ${FTDI_LIBRARY})
+	endif()
+
+endif ()
 
 if (WITH_NRF24_MOSQUITTO_TEST)
     target_link_libraries(nrf24_mosquitto_test ${NRF24_LIBRARY})
     target_link_libraries(nrf24_mosquitto_test ${MOSQUITTO_LIBRARY})
     target_link_libraries(nrf24_mosquitto_test ${PROTOBUFC_LIBRARIES})
-endif (WITH_NRF24_MOSQUITTO_TEST)
+
+	if ( NRF24_CONN STREQUAL "UM232H" )
+		target_link_libraries(nrf24_test ${FTDI_LIBRARY})
+	endif()
+
+endif ()
 
 ## misc
 
 # set path to spidev.h header for specific kernel
+
 if(DEFINED KERNEL_DIR)
     include_directories(${KERNEL_DIR}/include/linux/spi)
     include_directories(${KERNEL_DIR}/include/uapi/linux/spi)
-endif(DEFINED KERNEL_DIR)
-
+endif()
