@@ -1,6 +1,6 @@
 #include <string.h>
 
-#include "spi.h"
+#include "pcduino-spi.h"
 
 /* */
 
