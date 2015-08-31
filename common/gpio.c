@@ -1,10 +1,10 @@
 /* */
 
-#include "pcduino-gpio.h"
+#include "gpio.h"
 
 /* */
 
-int pcduino_gpio_setup(int port, char *name, int dir)
+int gpio_setup(int port, char *name, int dir)
 {
 	char gpio[128];
 	FILE *file;
@@ -60,7 +60,7 @@ int pcduino_gpio_setup(int port, char *name, int dir)
 	return ret;
 }
 
-int pcduino_gpio_close(int port)
+int gpio_close(int port)
 {
 	FILE *file;
 	int ret = 0;
@@ -83,7 +83,7 @@ int pcduino_gpio_close(int port)
 	return ret;
 }
 
-int pcduino_gpio_read(char *name)
+int gpio_read(char *name)
 {
 	char gpio[128];
 	int val, ret = 0;
@@ -110,7 +110,7 @@ int pcduino_gpio_read(char *name)
 	return val;
 }
 
-int pcduino_gpio_write(char *name, int value)
+int gpio_write(char *name, int value)
 {
 	char gpio[128];
 	FILE *file;

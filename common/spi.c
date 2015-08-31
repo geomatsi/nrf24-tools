@@ -1,22 +1,14 @@
 #include <string.h>
 
-#include "pcduino-spi.h"
+#include "spi.h"
 
 /* */
-
-static uint32_t speed = 1000000;
-
-/* hack for linux-sunxi-3.4 */
-static uint8_t mode = SPI_LOOP;
-
-static uint8_t bits = 8;
-static uint8_t lsb = 0;
 
 static int fd;
 
 /* */
 
-int pcduino_spi_open(char *spidev)
+int spi_open(char *spidev)
 {
 	printf("open spi device %s\n", spidev);
 
@@ -30,7 +22,7 @@ int pcduino_spi_open(char *spidev)
 	return 0;
 }
 
-int pcduino_spi_init(void)
+int spi_init(uint32_t speed, uint8_t mode, uint8_t bits, uint8_t lsb)
 {
 	int ret;
 
@@ -67,7 +59,7 @@ int pcduino_spi_init(void)
 	return 0;
 }
 
-int pcduino_spi_info(void)
+int spi_info(void)
 {
 	uint8_t m, b, o;
 	uint32_t s;
@@ -111,7 +103,7 @@ int pcduino_spi_info(void)
 }
 
 /* full-duplex */
-uint8_t pcduino_spi_xfer_fdx(uint8_t txdata)
+uint8_t spi_xfer_fdx(uint8_t txdata)
 {
 	struct spi_ioc_transfer xfer[1];
     uint8_t rxdata = 0xff;
@@ -134,7 +126,7 @@ uint8_t pcduino_spi_xfer_fdx(uint8_t txdata)
 }
 
 /* half-duplex */
-uint8_t pcduino_spi_xfer_hdx(uint8_t txdata)
+uint8_t spi_xfer_hdx(uint8_t txdata)
 {
 	struct spi_ioc_transfer xfer[2];
     uint8_t rxdata = 0;
@@ -158,7 +150,7 @@ uint8_t pcduino_spi_xfer_hdx(uint8_t txdata)
 	return rxdata;
 }
 
-void pcduino_spi_close(void)
+void spi_close(void)
 {
 	close(fd);
 }

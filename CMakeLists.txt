@@ -15,12 +15,12 @@ option (WITH_NRF24_MOSQUITTO_TEST "Build nRF24L01 mosquitto test publisher" OFF)
 ## select nRF24 connector: SPIDEV/UM232H/...
 
 file(GLOB_RECURSE UM232H_SRCS ${PROJECT_SOURCE_DIR}/drv/um232h/*.c)
-file(GLOB_RECURSE SPIDEV_SRCS ${PROJECT_SOURCE_DIR}/drv/spidev/*.c)
+file(GLOB_RECURSE PCDUINO_SRCS ${PROJECT_SOURCE_DIR}/drv/pcduino/*.c)
 
 set(NRF24_CONN "UM232H" CACHE STRING "nRF24x connector chosen by the user at CMake configure time")
 
-if ( NRF24_CONN STREQUAL "SPIDEV" )
-	set (CONN_SRCS ${SPIDEV_SRCS})
+if ( NRF24_CONN STREQUAL "PCDUINO" )
+    set (CONN_SRCS ${PCDUINO_SRCS} common/gpio.c common/spi.c)
 	message(STATUS "nRF24 connector: ${NRF24_CONN} (${CONN_SRCS})")
 endif ()
 
@@ -33,8 +33,7 @@ endif ()
 
 if (WITH_NRF24_TEST)
 	PROTOBUFC_GENERATE_C(PROTO_SRCS PROTO_HDRS msg.proto)
-    add_executable(
-        nrf24_test nrf24_test.c delay.c ${CONN_SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
+    add_executable(nrf24_test nrf24_test.c delay.c ${CONN_SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
 endif ()
 
 if (WITH_NRF24_MOSQUITTO_TEST)
