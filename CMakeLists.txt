@@ -89,11 +89,11 @@ include_directories(${NRF24_INCLUDE_DIR})
 
 if ( NRF24_CONN STREQUAL "UM232H" )
 	include_directories(${FTDI_INCLUDE_DIR})
-endif()
+endif ()
 
 if (WITH_NRF24_MOSQUITTO_TEST)
 	include_directories(${MOSQUITTO_INCLUDE_DIR})
-endif()
+endif ()
 
 include_directories(${PROTOBUFC_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -107,7 +107,7 @@ if (WITH_NRF24_TEST)
 
 	if ( NRF24_CONN STREQUAL "UM232H" )
 		target_link_libraries(nrf24_test ${FTDI_LIBRARY})
-	endif()
+	endif ()
 
 endif ()
 
@@ -118,7 +118,7 @@ if (WITH_NRF24_MOSQUITTO_TEST)
 
 	if ( NRF24_CONN STREQUAL "UM232H" )
 		target_link_libraries(nrf24_mosquitto_test ${FTDI_LIBRARY})
-	endif()
+	endif ()
 
 endif ()
 
@@ -129,4 +129,4 @@ endif ()
 if(DEFINED KERNEL_DIR)
     include_directories(${KERNEL_DIR}/include/linux/spi)
     include_directories(${KERNEL_DIR}/include/uapi/linux/spi)
-endif()
+endif ()
