@@ -86,8 +86,14 @@ PATHS /usr/lib /usr/lib/x86_64-linux-gnu
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
 include_directories(${NRF24_INCLUDE_DIR})
-include_directories(${MOSQUITTO_INCLUDE_DIR})
-include_directories(${FTDI_INCLUDE_DIR})
+
+if ( NRF24_CONN STREQUAL "UM232H" )
+	include_directories(${FTDI_INCLUDE_DIR})
+endif()
+
+if (WITH_NRF24_MOSQUITTO_TEST)
+	include_directories(${MOSQUITTO_INCLUDE_DIR})
+endif()
 
 include_directories(${PROTOBUFC_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
