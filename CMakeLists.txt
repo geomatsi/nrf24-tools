@@ -111,7 +111,7 @@ if (WITH_NRF24_MOSQUITTO_TEST)
     target_link_libraries(nrf24_mosquitto_test ${PROTOBUFC_LIBRARIES})
 
 	if ( NRF24_CONN STREQUAL "UM232H" )
-		target_link_libraries(nrf24_test ${FTDI_LIBRARY})
+		target_link_libraries(nrf24_mosquitto_test ${FTDI_LIBRARY})
 	endif()
 
 endif ()
