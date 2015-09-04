@@ -16,11 +16,17 @@ option (WITH_NRF24_MOSQUITTO_TEST "Build nRF24L01 mosquitto test publisher" OFF)
 
 file(GLOB_RECURSE UM232H_SRCS ${PROJECT_SOURCE_DIR}/drv/um232h/*.c)
 file(GLOB_RECURSE PCDUINO_SRCS ${PROJECT_SOURCE_DIR}/drv/pcduino/*.c)
+file(GLOB_RECURSE BONE_SRCS ${PROJECT_SOURCE_DIR}/drv/bone/*.c)
 
 set(NRF24_CONN "UM232H" CACHE STRING "nRF24x connector chosen by the user at CMake configure time")
 
 if ( NRF24_CONN STREQUAL "PCDUINO" )
     set (CONN_SRCS ${PCDUINO_SRCS} common/gpio.c common/spi.c)
+	message(STATUS "nRF24 connector: ${NRF24_CONN} (${CONN_SRCS})")
+endif ()
+
+if ( NRF24_CONN STREQUAL "BONE" )
+    set (CONN_SRCS ${BONE_SRCS} common/gpio.c common/spi.c)
 	message(STATUS "nRF24 connector: ${NRF24_CONN} (${CONN_SRCS})")
 endif ()
 
