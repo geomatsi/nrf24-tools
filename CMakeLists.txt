@@ -11,6 +11,7 @@ find_package(ProtobufC REQUIRED)
 
 option (WITH_NRF24_TEST "Build nRF24L01 basic test tool" ON)
 option (WITH_NRF24_MOSQUITTO_TEST "Build nRF24L01 mosquitto test publisher" OFF)
+option (WITH_SERIAL_MOSQUITTO_TEST "Build serial port mosquitto test publisher" OFF)
 
 ## select nRF24 connector: SPIDEV/UM232H/...
 
@@ -45,6 +46,10 @@ endif ()
 if (WITH_NRF24_MOSQUITTO_TEST)
 	PROTOBUFC_GENERATE_C(PROTO_SRCS PROTO_HDRS msg.proto)
     add_executable(nrf24_mosquitto_test nrf24_mosquitto_test.c delay.c ${CONN_SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
+endif ()
+
+if (WITH_SERIAL_MOSQUITTO_TEST)
+    add_executable(serial_mosquitto_test serial_mosquitto_test.c)
 endif ()
 
 ## find headers
@@ -100,6 +105,10 @@ if (WITH_NRF24_MOSQUITTO_TEST)
 	include_directories(${MOSQUITTO_INCLUDE_DIR})
 endif ()
 
+if (WITH_SERIAL_MOSQUITTO_TEST)
+	include_directories(${MOSQUITTO_INCLUDE_DIR})
+endif ()
+
 include_directories(${PROTOBUFC_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -124,6 +133,11 @@ if (WITH_NRF24_MOSQUITTO_TEST)
 	if ( NRF24_CONN STREQUAL "UM232H" )
 		target_link_libraries(nrf24_mosquitto_test ${FTDI_LIBRARY})
 	endif ()
+
+endif ()
+
+if (WITH_SERIAL_MOSQUITTO_TEST)
+    target_link_libraries(serial_mosquitto_test ${MOSQUITTO_LIBRARY})
 
 endif ()
 
