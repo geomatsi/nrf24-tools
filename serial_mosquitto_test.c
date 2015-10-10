@@ -17,6 +17,10 @@
 
 /* */
 
+#define DATA_SIZE	128
+
+/* */
+
 void mqtt_callback_log(struct mosquitto *mqtt, void *user, int level, const char *str)
 {
 	printf("INFO MOSQUITTO<%d> %s\n", level, str);
@@ -58,7 +62,7 @@ dump_data(char *b, int n)
 
 void publish_data(struct mosquitto *m, char *data, int n)
 {
-	char mqtt_message[64];
+	char mqtt_message[DATA_SIZE];
 	char mqtt_topic[64];
 	int i;
 
@@ -66,7 +70,7 @@ void publish_data(struct mosquitto *m, char *data, int n)
 	memset(mqtt_topic, 0x0, sizeof(mqtt_topic));
 	printf("serial_data[%s]\n", data);
 	strncpy(mqtt_message, data, sizeof(mqtt_message) - 1);
-	strncpy(mqtt_topic, "test/serial", sizeof(mqtt_message) - 1);
+	strncpy(mqtt_topic, "test/serial", sizeof(mqtt_topic) - 1);
 
 	if(mosquitto_publish(m, NULL, mqtt_topic, strlen(mqtt_message), mqtt_message, 0, 0)) {
 		printf("ERR: mosquitto could not publish message\n");
@@ -110,8 +114,10 @@ int convert_baudrate(int speed)
 	return speed;
 }
 
-void setup_serial_port(struct termios *ios, int baud)
+void setup_serial_termios(struct termios *ios, struct termios *old_ios, int baud)
 {
+	memcpy(ios, old_ios, sizeof(*ios));
+
 	cfmakeraw(ios);
 
 	/* Input flags */
@@ -143,8 +149,18 @@ void setup_serial_port(struct termios *ios, int baud)
 	ios->c_cc[VDISCARD] = 0;
 
 	cfsetspeed(ios, baud);
+
 	return;
 }
+
+void setup_stdin_termios(struct termios *ios, struct termios *old_ios)
+{
+	memcpy(ios, old_ios, sizeof(*ios));
+	ios->c_lflag &= ~(ECHO|ICANON);
+
+	return;
+}
+
 /* */
 
 int main(int argc, char *argv[])
@@ -166,17 +182,19 @@ int main(int argc, char *argv[])
 	char *port_name = "/dev/ttyS1";
 	int speed = B2400;
 
-	struct termios ios, old_ios;
+	struct termios sterm, old_sterm;
+	struct termios kterm, old_kterm;
 	struct timeval tv;
 
-	char buffer[64];
-	char *ptr;
+	char message[DATA_SIZE];
+	int pos;
 	char ch;
 
-	int pfd, rc;
+	int pfd, tfd, rc;
 	fd_set rset;
 
 	bool active = true;
+	bool ready = false;
 
 	/* command line options */
 
@@ -213,29 +231,6 @@ int main(int argc, char *argv[])
         }
     }
 
-	/* setup serial port */
-
-	pfd = open(port_name, O_RDWR | O_NOCTTY);
-
-	if (pfd < 0) {
-		perror("ERR: can not open serial port");
-		exit(-1);
-	}
-
-	setup_serial_port(&ios, speed);
-
-	if (tcgetattr(pfd, &old_ios) < 0) {
-		perror("ERR: tcgetattr");
-		close(pfd);
-		exit(-1);
-	}
-
-	if (tcsetattr(pfd, TCSANOW, &ios) < 0) {
-		perror("ERR: tcsetattr");
-		close(pfd);
-		exit(-1);
-	}
-
 	/* setup mosquitto */
 
 	mosquitto_lib_init();
@@ -260,21 +255,60 @@ int main(int argc, char *argv[])
 		exit(-1);
 	}
 
+	/* setup serial port */
+
+	pfd = open(port_name, O_RDWR | O_NOCTTY);
+
+	if (pfd < 0) {
+		perror("ERR: can not open serial port");
+		goto mqtt_out;
+	}
+
+	if (tcgetattr(pfd, (void *) &old_sterm) < 0) {
+		perror("ERR: serial tcgetattr");
+		close(pfd);
+		goto mqtt_out;
+	}
+
+	setup_serial_termios(&sterm, &old_sterm, speed);
+
+	if (tcsetattr(pfd, TCSANOW, &sterm) < 0) {
+		perror("ERR: serial tcsetattr");
+		close(pfd);
+		goto serial_out;
+	}
+
+	/* setup non-blocking stdin */
+
+	tfd = STDIN_FILENO;
+
+	if (tcgetattr(tfd, (void *) &old_kterm) < 0) {
+		perror("ERR: stdin tcgetattr");
+		goto serial_out;
+	}
+
+	setup_stdin_termios(&kterm, &old_kterm);
+
+	if (tcsetattr(tfd, TCSANOW, &kterm) < 0) {
+		perror("ERR: stdin tcsetattr");
+		goto stdin_out;
+	}
+
 	/* main processing */
 
-	bzero(buffer, sizeof(buffer));
-	ptr = buffer;
+	memset(message, 0x0, sizeof(message));
+	pos = 0;
 
 	while (active) {
 
 		FD_ZERO(&rset);
 		FD_SET(pfd, &rset);
-		FD_SET(0, &rset);
+		FD_SET(tfd, &rset);
 
 		tv.tv_sec = 5;
 		tv.tv_usec = 0;
 
-		rc = select(pfd + 1, &rset, NULL, NULL, &tv);
+		rc = select((pfd > tfd) ? (pfd + 1) : (tfd + 1), &rset, NULL, NULL, &tv);
 
 		if (rc == 0) {
 			/* select timeout */
@@ -293,9 +327,9 @@ int main(int argc, char *argv[])
 			}
 		}
 
-		if (FD_ISSET(0, &rset)) {
+		if (FD_ISSET(tfd, &rset)) {
 
-			rc = read(0, &ch, 1);
+			rc = read(tfd, &ch, 1);
 
 			if (rc < 0) {
 				perror("ERR: read stdin");
@@ -308,11 +342,17 @@ int main(int argc, char *argv[])
 				continue;
 			}
 
-			if (ch == 'x') {
-				fprintf(stdout, " exit command: [%c]\n", ch);
-				active = false;
-			} else {
-				fprintf(stdout, " unknown command [%c[\n", ch);
+			switch (ch) {
+				case 'x':
+					fprintf(stdout, "exit command: [%c]\n", ch);
+					active = false;
+					break;
+				case 't':
+					fprintf(stdout, "test command: [%c]\n", ch);
+					break;
+				default:
+					fprintf(stdout, " unknown command [%c]\n", ch);
+					break;
 			}
 		}
 
@@ -327,40 +367,66 @@ int main(int argc, char *argv[])
 			}
 
 			if (rc == 0) {
-				fprintf(stdout, "got 0 bytes from port\n");
+				fprintf(stdout, "got 0 bytes from serial port\n");
 				continue;
 			}
 
-			if ((ch == '\n') || (strlen(buffer) + 1 == sizeof(buffer))) {
+			switch (ch) {
+				case '\n':
+					ready = true;
+					break;
+				case '\r':
+					ready = true;
+					break;
+				default:
+					message[pos++] = ch;
+					break;
+			}
 
-				/* process serial line */
+			if ((ready) || ((pos + 1) == sizeof(message))) {
 
-				if (publish_message) {
-					publish_data(mqtt, (char *) buffer, strlen(buffer));
-				} else {
-					dump_data((char *) buffer, strlen(buffer));
+				/* process non-empty message */
+
+				if (pos > 0) {
+
+					fprintf(stdout, "process message [%s]\n", message);
+
+					if (publish_message) {
+						publish_data(mqtt, (char *) message, strlen(message));
+					} else {
+						dump_data((char *) message, strlen(message));
+					}
 				}
 
-				/* prepare for next serial line */
+				/* prepare for next serial message */
 
-				bzero(buffer, sizeof(buffer));
-				ptr = buffer;
-				continue;
+				ready = false;
+				memset(message, 0x0, sizeof(message));
+				pos = 0;
 			}
 
-			*ptr++ = ch;
-			continue;
 		}
 	}
 
+	/* restore stdin settings before exit */
+
+stdin_out:
+
+	if (tcsetattr(tfd, TCSANOW, &old_kterm) < 0) {
+		perror("ERR: restore stdin tcsetattr");
+	}
 
 	/* restore serial settings before exit */
 
-	if (tcsetattr(pfd, TCSANOW, &ios) < 0) {
-		perror("ERR: restore settings using tcsetattr");
-		close(pfd);
-		exit(-1);
+serial_out:
+
+	if (tcsetattr(pfd, TCSANOW, &old_sterm) < 0) {
+		perror("ERR: restore serial tcsetattr");
 	}
+
+	close(pfd);
+
+mqtt_out:
 
 	/* TODO: mqtt client graceful shutdown */
 
