@@ -44,23 +44,27 @@ void serial_test_usage(char *name)
 	printf("\t-h, --help\t\t\tthis help message\n");
 	printf("\t-p, --port <serial>\t\tserial port, default is '/dev/ttyS1\n");
 	printf("\t-s, --speed <baudrate>\t\tserial port rate, default is B2400\n");
+	printf("\t-n, --name <filename>\t\tfile to store messages\n");
 	printf("\t--publish-message\t\tpublish messages to MQTT broker\n");
+	printf("\t--print-message\t\tprint messages to console\n");
+	printf("\t--dump-message\t\tdump messages to file on disk\n");
 }
 
-dump_data(char *b, int n)
+int print_data(char *data, int n)
 {
     int p;
 
     for(p = 0; p < n; p++) {
-        printf("0x%02x ", *(b + p));
+        printf("0x%02x ", *(data + p));
         if ((p > 0) && ((p % 64) == 0))
             printf("\n");
     }
 
     printf("\n");
+    return 0;
 }
 
-void publish_data(struct mosquitto *m, char *data, int n)
+int publish_data(struct mosquitto *m, char *data, int n)
 {
 	char mqtt_message[DATA_SIZE];
 	char mqtt_topic[64];
@@ -73,10 +77,33 @@ void publish_data(struct mosquitto *m, char *data, int n)
 	strncpy(mqtt_topic, "test/serial", sizeof(mqtt_topic) - 1);
 
 	if(mosquitto_publish(m, NULL, mqtt_topic, strlen(mqtt_message), mqtt_message, 0, 0)) {
-		printf("ERR: mosquitto could not publish message\n");
+		perror("ERR: mosquitto could not publish message");
+        return -1;
 	}
 
-    return;
+    return 0;
+}
+
+int dump_data(FILE *fp, char *data, int n)
+{
+	time_t ticks;
+    int rc;
+
+    ticks = time(NULL);
+
+	rc = fprintf(fp, "%lld;%s\n", (long long) ticks, data);
+    if (rc < 0) {
+        perror("ERR: couldn't dump message to file");
+        return -1;
+    }
+
+    rc = fflush(fp);
+    if (rc != 0) {
+        perror("ERR: couldn't fflush");
+        return -1;
+    }
+
+    return 0;
 }
 
 int convert_baudrate(int speed)
@@ -168,6 +195,8 @@ int main(int argc, char *argv[])
 	/* */
 
 	bool publish_message = false;
+	bool print_message = false;
+	bool dump_message = false;
 
 	char *host = "localhost";
 	int port = 1883;
@@ -178,6 +207,9 @@ int main(int argc, char *argv[])
 	char *mqtt_id = "serial_data";
 
 	/* */
+
+	char *dump_name = "/data/data.txt";
+    FILE *dfp = NULL;
 
 	char *port_name = "/dev/ttyS1";
 	int speed = B2400;
@@ -199,11 +231,14 @@ int main(int argc, char *argv[])
 	/* command line options */
 
 	int opt;
-	const char opts[] = "p:s:h:";
+	const char opts[] = "p:s:n:h:";
     const struct option longopts[] = {
         {"port", required_argument, NULL, 'p'},
         {"speed", required_argument, NULL, 's'},
+        {"name", required_argument, NULL, 'n'},
         {"publish-message", no_argument, NULL, '0'},
+        {"print-message", no_argument, NULL, '1'},
+        {"dump-message", no_argument, NULL, '2'},
         {"help", optional_argument, NULL, 'h'},
         {NULL,}
     };
@@ -212,6 +247,9 @@ int main(int argc, char *argv[])
         switch (opt) {
 			case 'p':
 				port_name = strdup(optarg);
+				break;
+			case 'n':
+				dump_name = strdup(optarg);
 				break;
 			case 's':
                 speed = atoi(optarg);
@@ -224,6 +262,12 @@ int main(int argc, char *argv[])
 			case '0':
 				publish_message = true;
 				break;
+			case '1':
+				print_message = true;
+				break;
+			case '2':
+				dump_message = true;
+				break;
             case 'h':
 			default:
 				serial_test_usage(argv[0]);
@@ -233,27 +277,41 @@ int main(int argc, char *argv[])
 
 	/* setup mosquitto */
 
-	mosquitto_lib_init();
+    if (publish_message) {
 
-	mqtt = mosquitto_new(mqtt_id, clean_session, NULL);
-	if (!mqtt) {
-		printf("ERR: can not allocate mosquitto context\n");
-		exit(-1);
-	}
+        mosquitto_lib_init();
 
-	mosquitto_log_callback_set(mqtt, mqtt_callback_log);
-	mosquitto_publish_callback_set(mqtt, mqtt_callback_publish);
-	mosquitto_connect_callback_set(mqtt, mqtt_callback_connect);
+        mqtt = mosquitto_new(mqtt_id, clean_session, NULL);
+        if (!mqtt) {
+            printf("ERR: can not allocate mosquitto context\n");
+            exit(-1);
+        }
 
-	if(mosquitto_connect(mqtt, host, port, keepalive)) {
-		printf("ERR: can not connect to mosquitto server %s:%d\n", host, port);
-		exit(-1);
-	}
+        mosquitto_log_callback_set(mqtt, mqtt_callback_log);
+        mosquitto_publish_callback_set(mqtt, mqtt_callback_publish);
+        mosquitto_connect_callback_set(mqtt, mqtt_callback_connect);
 
-	if (mosquitto_loop_start(mqtt)) {
-		printf("ERR: can not start mosquitto thread\n");
-		exit(-1);
-	}
+        if(mosquitto_connect(mqtt, host, port, keepalive)) {
+            printf("ERR: can not connect to mosquitto server %s:%d\n", host, port);
+            exit(-1);
+        }
+
+        if (mosquitto_loop_start(mqtt)) {
+            printf("ERR: can not start mosquitto thread\n");
+            exit(-1);
+        }
+    }
+
+    /* setup dump file */
+
+    if (dump_message) {
+        dfp = fopen(dump_name, "a");
+
+        if (dfp == NULL) {
+            perror("ERR: can not open dump file");
+            goto mqtt_out;
+        }
+    }
 
 	/* setup serial port */
 
@@ -261,13 +319,13 @@ int main(int argc, char *argv[])
 
 	if (pfd < 0) {
 		perror("ERR: can not open serial port");
-		goto mqtt_out;
+		goto dump_out;
 	}
 
 	if (tcgetattr(pfd, (void *) &old_sterm) < 0) {
 		perror("ERR: serial tcgetattr");
 		close(pfd);
-		goto mqtt_out;
+		goto dump_out;
 	}
 
 	setup_serial_termios(&sterm, &old_sterm, speed);
@@ -389,13 +447,24 @@ int main(int argc, char *argv[])
 
 				if (pos > 0) {
 
-					fprintf(stdout, "process message [%s]\n", message);
+                    rc = 0;
 
 					if (publish_message) {
-						publish_data(mqtt, (char *) message, strlen(message));
-					} else {
-						dump_data((char *) message, strlen(message));
+						rc += publish_data(mqtt, (char *) message, strlen(message));
 					}
+
+                    if (print_message) {
+                        rc += print_data((char *) message, strlen(message));
+                    }
+
+                    if (dump_message) {
+					    rc += dump_data(dfp, (char *) message, strlen(message));
+					}
+
+                    if (rc < 0) {
+					    fprintf(stderr, "exit on backend errors...\n");
+                        active = false;
+                    }
 				}
 
 				/* prepare for next serial message */
@@ -426,9 +495,17 @@ serial_out:
 
 	close(pfd);
 
+dump_out:
+
+    if (dump_message) {
+        fclose(dfp);
+    }
+
 mqtt_out:
 
-	/* TODO: mqtt client graceful shutdown */
+    if (publish_message) {
+        mosquitto_destroy(mqtt);
+    }
 
 	return 0;
 }
