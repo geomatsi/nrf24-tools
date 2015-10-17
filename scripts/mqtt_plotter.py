@@ -35,8 +35,11 @@ def on_message(client, userdata, msg):
 # setup animated plot
 plot.ion()
 
+# setup figure size: NB inches
+plot.figure(figsize = (15, 10))
+
 # prepare axes and plot
-ydata = [0] * 50
+ydata = [0] * 1000
 line, = plot.plot(ydata)
 plot.ylim([0, 5000])
 
