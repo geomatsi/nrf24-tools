@@ -5,6 +5,18 @@ import matplotlib.dates as mdates
 import numpy as np
 import datetime
 
+### math
+
+# simple moving average
+def sma_filter(x, n):
+	return np.convolve(y, np.ones((n,))/n, mode='valid')
+
+# weighted moving average
+def wma_filter(x, w):
+	wf = map(float, w)
+	ws = np.sum(w)
+	return np.convolve(y, wf/ws, mode='valid')
+
 ### main
 
 # read data
@@ -38,7 +50,7 @@ fig.canvas.set_window_title('Gas sensor')
 y1 = y
 x1 = x
 
-a1 = fig.add_subplot(211)
+a1 = fig.add_subplot(311)
 
 a1.set_ylabel("adc")
 a1.grid(True)
@@ -50,17 +62,18 @@ a1.xaxis.set_major_formatter(mdates.DateFormatter('%d-%m %H:%M'))
 a1.xaxis.set_major_locator(mdates.MinuteLocator(interval=mint))
 
 for tick in a1.get_xticklabels():
-	tick.set_rotation(20)
+	tick.set_rotation(10)
 	tick.set_size('x-small')
 
-# plot 2.1: moving average
+# plot 2.1: simple moving average
 
-y1 = np.convolve(y, np.ones((20,))/20, mode='valid')
+y1 = sma_filter(y, 20)
+
 x1 = x[0:len(y1)]
 
-a2 = fig.add_subplot(212)
+a2 = fig.add_subplot(312)
 
-a2.set_ylabel("average")
+a2.set_ylabel("simple average")
 a2.grid(True)
 
 a2.plot(x1, y1, c='g')
@@ -69,7 +82,7 @@ a2.xaxis.set_major_formatter(mdates.DateFormatter('%d-%m %H:%M'))
 a2.xaxis.set_major_locator(mdates.MinuteLocator(interval=mint))
 
 for tick in a2.get_xticklabels():
-	tick.set_rotation(20)
+	tick.set_rotation(10)
 	tick.set_size('x-small')
 
 # plot 2.2: threshold crosses by moving average
@@ -79,6 +92,35 @@ x2 = x1
 
 a2.plot(x2, y2, c='b')
 a2.legend(['moving average', "threshold (" + str(thr) + ")"])
+
+# plot 3.1: weighted moving average
+
+y1 = wma_filter(y, [1,3,6,3,1])
+
+x1 = x[0:len(y1)]
+
+a3 = fig.add_subplot(313)
+
+a3.set_ylabel("weighted average")
+a3.grid(True)
+
+a3.plot(x1, y1, c='g')
+
+a3.xaxis.set_major_formatter(mdates.DateFormatter('%d-%m %H:%M'))
+a3.xaxis.set_major_locator(mdates.MinuteLocator(interval=mint))
+
+for tick in a3.get_xticklabels():
+	tick.set_rotation(10)
+	tick.set_size('x-small')
+
+# plot 3.2: threshold crosses by moving average
+
+y2 = [thr if (t > thr) else 0.0 for t in y1]
+x2 = x1
+
+a3.plot(x2, y2, c='b')
+a3.legend(['moving average', "threshold (" + str(thr) + ")"])
+
 
 # draw data
 plot.show()
