@@ -23,17 +23,20 @@
 
 void mqtt_callback_log(struct mosquitto *mqtt, void *user, int level, const char *str)
 {
-	printf("INFO MOSQUITTO<%d> %s\n", level, str);
+	fprintf(stdout, "INFO MOSQUITTO<%d> %s\n", level, str);
+    fflush(stdout);
 }
 
 void mqtt_callback_publish(struct mosquitto *mqtt, void *user, int mid)
 {
-	printf("INFO MOSQUITTO: message %d published\n", mid);
+	fprintf(stdout, "INFO MOSQUITTO: message %d published\n", mid);
+    fflush(stdout);
 }
 
 void mqtt_callback_connect(struct mosquitto *mqtt, void *user, int result)
 {
-	printf("INFO MOSQUITTO: connection response %d\n", result);
+	fprintf(stdout, "INFO MOSQUITTO: connection response %d\n", result);
+    fflush(stdout);
 }
 
 /* */
@@ -42,6 +45,8 @@ void serial_test_usage(char *name)
 {
 	printf("usage: %s [-h] -p <serial> -s <baudrate>\n", name);
 	printf("\t-h, --help\t\t\tthis help message\n");
+	printf("\t-d, --daemon\t\t\tput sensor observer into background after starting\n");
+	printf("\t-l, --log\t\t\tlog file for daemon mode\n");
 	printf("\t-p, --port <serial>\t\tserial port, default is '/dev/ttyS1\n");
 	printf("\t-s, --speed <baudrate>\t\tserial port rate, default is B2400\n");
 	printf("\t-n, --name <filename>\t\tfile to store messages\n");
@@ -55,12 +60,14 @@ int print_data(char *data, int n)
     int p;
 
     for(p = 0; p < n; p++) {
-        printf("0x%02x ", *(data + p));
+        fprintf(stdout, "0x%02x ", *(data + p));
         if ((p > 0) && ((p % 64) == 0))
-            printf("\n");
+            fprintf(stdout, "\n");
     }
 
-    printf("\n");
+    fprintf(stdout, "\n");
+    fflush(stdout);
+
     return 0;
 }
 
@@ -72,7 +79,6 @@ int publish_data(struct mosquitto *m, char *data, int n)
 
 	memset(mqtt_message, 0x0, sizeof(mqtt_message));
 	memset(mqtt_topic, 0x0, sizeof(mqtt_topic));
-	printf("serial_data[%s]\n", data);
 	strncpy(mqtt_message, data, sizeof(mqtt_message) - 1);
 	strncpy(mqtt_topic, "test/serial", sizeof(mqtt_topic) - 1);
 
@@ -197,6 +203,7 @@ int main(int argc, char *argv[])
 	bool publish_message = false;
 	bool print_message = false;
 	bool dump_message = false;
+	bool daemon_mode = false;
 
 	char *host = "localhost";
 	int port = 1883;
@@ -207,6 +214,10 @@ int main(int argc, char *argv[])
 	char *mqtt_id = "serial_data";
 
 	/* */
+
+	char *log_name = "/var/log/sensor_pub.log";
+    FILE *lfp = NULL;
+    pid_t pid;
 
 	char *dump_name = "/data/data.txt";
     FILE *dfp = NULL;
@@ -231,11 +242,13 @@ int main(int argc, char *argv[])
 	/* command line options */
 
 	int opt;
-	const char opts[] = "p:s:n:h:";
+	const char opts[] = "p:s:n:l:hd";
     const struct option longopts[] = {
         {"port", required_argument, NULL, 'p'},
         {"speed", required_argument, NULL, 's'},
         {"name", required_argument, NULL, 'n'},
+        {"log", required_argument, NULL, 'l'},
+        {"daemon", no_argument, NULL, 'd'},
         {"publish-message", no_argument, NULL, '0'},
         {"print-message", no_argument, NULL, '1'},
         {"dump-message", no_argument, NULL, '2'},
@@ -250,6 +263,12 @@ int main(int argc, char *argv[])
 				break;
 			case 'n':
 				dump_name = strdup(optarg);
+				break;
+			case 'l':
+				log_name = strdup(optarg);
+				break;
+			case 'd':
+				daemon_mode = true;
 				break;
 			case 's':
                 speed = atoi(optarg);
@@ -275,6 +294,55 @@ int main(int argc, char *argv[])
         }
     }
 
+    /* go to background mode */
+
+    if (daemon_mode) {
+
+        pid = fork();
+
+        if (pid < 0) {
+            perror("first fork failed");
+            exit(-1);
+        }
+
+        if (pid > 0) {
+            /* let the parent terminate */
+            exit(0);
+        }
+
+        if (0 > setsid()) {
+            perror("setsid failed");
+            exit(-1);
+        }
+
+        signal(SIGHUP, SIG_IGN);
+        signal(SIGCHLD, SIG_IGN);
+
+        pid = fork();
+
+        if (pid < 0) {
+            perror("second fork failed");
+            exit(-1);
+        }
+
+        if (pid > 0) {
+            /* let the parent terminate */
+            exit(0);
+        }
+
+        umask(0);
+        chdir("/");
+
+        if (NULL == (lfp = fopen(log_name, "a"))) {
+            perror("ERR: couldn't not open log file");
+            exit(-1);
+        }
+
+        dup2(fileno(lfp), fileno(stdout));
+        dup2(fileno(lfp), fileno(stderr));
+        close(fileno(stdin));
+    }
+
 	/* setup mosquitto */
 
     if (publish_message) {
@@ -283,7 +351,7 @@ int main(int argc, char *argv[])
 
         mqtt = mosquitto_new(mqtt_id, clean_session, NULL);
         if (!mqtt) {
-            printf("ERR: can not allocate mosquitto context\n");
+            fprintf(stderr, "ERR: can not allocate mosquitto context\n");
             exit(-1);
         }
 
@@ -292,12 +360,12 @@ int main(int argc, char *argv[])
         mosquitto_connect_callback_set(mqtt, mqtt_callback_connect);
 
         if(mosquitto_connect(mqtt, host, port, keepalive)) {
-            printf("ERR: can not connect to mosquitto server %s:%d\n", host, port);
+            fprintf(stderr, "ERR: can not connect to mosquitto server %s:%d\n", host, port);
             exit(-1);
         }
 
         if (mosquitto_loop_start(mqtt)) {
-            printf("ERR: can not start mosquitto thread\n");
+            fprintf(stderr, "ERR: can not start mosquitto thread\n");
             exit(-1);
         }
     }
@@ -336,21 +404,28 @@ int main(int argc, char *argv[])
 		goto serial_out;
 	}
 
-	/* setup non-blocking stdin */
+	/* setup non-blocking stdin if in foreground mode */
 
-	tfd = STDIN_FILENO;
+    if (daemon) {
 
-	if (tcgetattr(tfd, (void *) &old_kterm) < 0) {
-		perror("ERR: stdin tcgetattr");
-		goto serial_out;
-	}
+        tfd = -1;
 
-	setup_stdin_termios(&kterm, &old_kterm);
+    } else {
 
-	if (tcsetattr(tfd, TCSANOW, &kterm) < 0) {
-		perror("ERR: stdin tcsetattr");
-		goto stdin_out;
-	}
+        tfd = STDIN_FILENO;
+
+        if (tcgetattr(tfd, (void *) &old_kterm) < 0) {
+            perror("ERR: stdin tcgetattr");
+            goto serial_out;
+        }
+
+        setup_stdin_termios(&kterm, &old_kterm);
+
+        if (tcsetattr(tfd, TCSANOW, &kterm) < 0) {
+            perror("ERR: stdin tcsetattr");
+            goto stdin_out;
+        }
+    }
 
 	/* main processing */
 
@@ -361,7 +436,9 @@ int main(int argc, char *argv[])
 
 		FD_ZERO(&rset);
 		FD_SET(pfd, &rset);
-		FD_SET(tfd, &rset);
+
+        if (!daemon)
+            FD_SET(tfd, &rset);
 
 		tv.tv_sec = 5;
 		tv.tv_usec = 0;
@@ -377,6 +454,7 @@ int main(int argc, char *argv[])
 
 			if (errno == EINTR) {
 				fprintf(stdout, "select was interrupted, try again\n");
+                fflush(stdout);
 				continue;
 			} else {
 				perror("ERR: select");
@@ -481,9 +559,11 @@ int main(int argc, char *argv[])
 
 stdin_out:
 
-	if (tcsetattr(tfd, TCSANOW, &old_kterm) < 0) {
-		perror("ERR: restore stdin tcsetattr");
-	}
+    if (!daemon) {
+        if (tcsetattr(tfd, TCSANOW, &old_kterm) < 0) {
+            perror("ERR: restore stdin tcsetattr");
+        }
+    }
 
 	/* restore serial settings before exit */
 
