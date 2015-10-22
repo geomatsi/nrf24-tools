@@ -21,6 +21,25 @@
 
 /* */
 
+bool active = true;
+
+/* */
+
+void sig_handler(int sig)
+{
+    switch (sig) {
+        case SIGTERM:
+            fprintf(stderr, "SIGTERM received, exiting...\n");
+            active = false;
+            break;
+        default:
+            fprintf(stderr, "%d received...\n", sig);
+            break;
+    }
+}
+
+/* */
+
 void mqtt_callback_log(struct mosquitto *mqtt, void *user, int level, const char *str)
 {
 	fprintf(stdout, "INFO MOSQUITTO<%d> %s\n", level, str);
@@ -236,7 +255,6 @@ int main(int argc, char *argv[])
 	int pfd, tfd, rc;
 	fd_set rset;
 
-	bool active = true;
 	bool ready = false;
 
 	/* command line options */
@@ -293,6 +311,10 @@ int main(int argc, char *argv[])
 				exit(0);
         }
     }
+
+    /* signal handling */
+
+    signal(SIGTERM, sig_handler);
 
     /* go to background mode */
 
@@ -453,7 +475,7 @@ int main(int argc, char *argv[])
 		if (rc == -1) {
 
 			if (errno == EINTR) {
-				fprintf(stdout, "select was interrupted, try again\n");
+				fprintf(stdout, "select was interrupted by signal, continue\n");
                 fflush(stdout);
 				continue;
 			} else {
