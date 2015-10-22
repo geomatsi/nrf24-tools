@@ -228,6 +228,7 @@ int main(int argc, char *argv[])
 	int port = 1883;
 	int keepalive = 60;
 	bool clean_session = true;
+	int try = 3;
 
 	struct mosquitto *mqtt = NULL;
 	char *mqtt_id = "serial_data";
@@ -381,9 +382,18 @@ int main(int argc, char *argv[])
         mosquitto_publish_callback_set(mqtt, mqtt_callback_publish);
         mosquitto_connect_callback_set(mqtt, mqtt_callback_connect);
 
-        if(mosquitto_connect(mqtt, host, port, keepalive)) {
-            fprintf(stderr, "ERR: can not connect to mosquitto server %s:%d\n", host, port);
-            exit(-1);
+        while (1) {
+            if (mosquitto_connect(mqtt, host, port, keepalive)) {
+                if (try-- > 0) {
+                    fprintf(stderr, "WARN: could not connect to mosquitto server %s:%d, try once more after 3 sec...\n", host, port);
+                    sleep(3);
+                } else {
+                    fprintf(stderr, "ERR: could not connect to mosquitto server %s:%d, exiting...\n", host, port);
+                    goto mqtt_out;
+                }
+            } else {
+                break;
+            }
         }
 
         if (mosquitto_loop_start(mqtt)) {
