@@ -102,7 +102,8 @@ int publish_data(struct mosquitto *m, char *data, int n)
 	strncpy(mqtt_topic, "test/serial", sizeof(mqtt_topic) - 1);
 
 	if(mosquitto_publish(m, NULL, mqtt_topic, strlen(mqtt_message), mqtt_message, 0, 0)) {
-		perror("ERR: mosquitto could not publish message");
+		fprintf(stderr, "ERR: mosquitto could not publish message");
+		fflush(stderr);
         return -1;
 	}
 
@@ -398,7 +399,7 @@ int main(int argc, char *argv[])
 
         if (mosquitto_loop_start(mqtt)) {
             fprintf(stderr, "ERR: can not start mosquitto thread\n");
-            exit(-1);
+            goto mqtt_out;
         }
     }
 
