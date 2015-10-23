@@ -1,6 +1,9 @@
 #!/usr/bin/python
 
 import mosquitto
+import getopt
+import sys
+
 from matplotlib import pyplot as plot
 
 ### mosquitto methods
@@ -30,6 +33,32 @@ def on_message(client, userdata, msg):
 
 ### main
 
+### main: command line args
+
+server = "localhost"
+port = 1883
+topic = "test/plot"
+
+try:
+	opts, args = getopt.getopt(sys.argv[1:],"hs:p:t:",["server=", "port=", "topic="])
+except getopt.GetoptError:
+	print sys.argv[0], " -s <mqtt server> -p <mqtt server port> -t <mqtt topic>"
+	sys.exit(-1)
+
+for opt, arg in opts:
+	if opt == '-h':
+		print sys.argv[0], " -s <mqtt server> -p <mqtt server port> -t <mqtt topic>"
+		sys.exit(0)
+	elif opt in ("-s", "--server"):
+		server = arg
+	elif opt in ("-p", "--port"):
+		port = arg
+	elif opt in ("-t", "--topic"):
+		topic = arg
+	else:
+		print sys.argv[0], " -s <mqtt server> -p <mqtt server port> -t <mqtt topic>"
+		sys.exit(0)
+
 ### main: prepare live plot
 
 # setup animated plot
@@ -49,8 +78,8 @@ client = mosquitto.Mosquitto();
 client.on_connect = on_connect
 client.on_message = on_message
 
-client.connect("localhost", 1883, 60)
-client.subscribe("test/plot")
+client.connect(server, port, 60)
+client.subscribe(topic)
 
 ### main: loop
 
