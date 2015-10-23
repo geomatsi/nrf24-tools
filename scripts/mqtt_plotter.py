@@ -11,7 +11,7 @@ from matplotlib import pyplot as plot
 def on_connect(client, userdata, rc):
 	print("mqtt connected: rc = " + str(rc))
 	# subscribe here to renew subscription on reconnect
-	client.subscribe("test/plot")
+	client.subscribe(topic)
 
 def on_message(client, userdata, msg):
 	print(msg.topic + ": " + str(msg.payload))
