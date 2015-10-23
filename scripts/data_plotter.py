@@ -4,6 +4,8 @@ import matplotlib.pyplot as plot
 import matplotlib.dates as mdates
 import numpy as np
 import datetime
+import getopt
+import sys
 
 ### math
 
@@ -19,10 +21,34 @@ def wma_filter(x, w):
 
 ### main
 
+### main: command line args
+
+data = "t.txt"
+
+try:
+	opts, args = getopt.getopt(sys.argv[1:],"hd:",["data="])
+except getopt.GetoptError:
+	print sys.argv[0], " -d <data file>"
+	sys.exit(-1)
+
+for opt, arg in opts:
+	if opt == '-h':
+		print sys.argv[0], " -d <data file>"
+		sys.exit(0)
+	elif opt in ("-d", "--data"):
+		data = arg
+	else:
+		print sys.argv[0], " -d <data file> -s <mqtt server> -p <mqtt server port> -t <mqtt topic>"
+		sys.exit(0)
+
 # read data
 
-with open("t.txt") as f:
-    data = f.read()
+try:
+	with open(data) as f:
+		data = f.read()
+except IOError as e:
+	print "Open file {0}: I/O error({1}): {2}".format(data, e.errno, e.strerror)
+	sys.exit(-1)
 
 data = data.split('\n') #[0:2000]
 
