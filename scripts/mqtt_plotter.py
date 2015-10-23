@@ -61,8 +61,8 @@ for opt, arg in opts:
 
 ### main: prepare live plot
 
-# setup animated plot
-plot.ion()
+# cleanup
+plot.close('all')
 
 # setup figure size: NB inches
 fig = plot.figure(figsize = (15, 10))
@@ -81,7 +81,8 @@ client.on_message = on_message
 
 client.connect(server, port, 60)
 client.subscribe(topic)
+client.loop_start()
 
-### main: loop
+### main: explicit pyplot loop and threaded mosquitto loop
 
-client.loop_forever()
+plot.show()
