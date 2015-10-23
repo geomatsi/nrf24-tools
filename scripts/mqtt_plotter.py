@@ -65,7 +65,8 @@ for opt, arg in opts:
 plot.ion()
 
 # setup figure size: NB inches
-plot.figure(figsize = (15, 10))
+fig = plot.figure(figsize = (15, 10))
+fig.canvas.set_window_title('Live mqtt data')
 
 # prepare axes and plot
 ydata = [0] * 1000
