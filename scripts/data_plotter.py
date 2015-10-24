@@ -24,21 +24,24 @@ def wma_filter(x, w):
 ### main: command line args
 
 data = "t.txt"
+threshold = 1000
 
 try:
-	opts, args = getopt.getopt(sys.argv[1:],"hd:",["data="])
+	opts, args = getopt.getopt(sys.argv[1:],"hd:t:",["data=", "threshold="])
 except getopt.GetoptError:
-	print sys.argv[0], " -d <data file>"
+	print sys.argv[0], " -d <data file> -t <threshold>"
 	sys.exit(-1)
 
 for opt, arg in opts:
 	if opt == '-h':
-		print sys.argv[0], " -d <data file>"
+		print sys.argv[0], " -d <data file> -t <threshold>"
 		sys.exit(0)
 	elif opt in ("-d", "--data"):
 		data = arg
+	elif opt in ("-t", "--threshold"):
+		threshold = int(arg)
 	else:
-		print sys.argv[0], " -d <data file> -s <mqtt server> -p <mqtt server port> -t <mqtt topic>"
+		print sys.argv[0], " -d <data file> -t <threshold>"
 		sys.exit(0)
 
 # read data
@@ -60,9 +63,6 @@ mint = int((x[len(x) - 1] - x[0])/60/10)
 
 # x-axis: convert epoch to date format
 x = map(datetime.datetime.fromtimestamp, x)
-
-# y-axis: threshold
-thr = 1000
 
 # cleanup
 plot.close('all')
@@ -113,11 +113,11 @@ for tick in a2.get_xticklabels():
 
 # plot 2.2: threshold crosses by moving average
 
-y2 = [thr if (t > thr) else 0.0 for t in y1]
+y2 = [threshold if (t > threshold) else 0.0 for t in y1]
 x2 = x1
 
 a2.plot(x2, y2, c='b')
-a2.legend(['moving average', "threshold (" + str(thr) + ")"])
+a2.legend(['moving average', "threshold (" + str(threshold) + ")"])
 
 # plot 3.1: weighted moving average
 
@@ -141,11 +141,11 @@ for tick in a3.get_xticklabels():
 
 # plot 3.2: threshold crosses by moving average
 
-y2 = [thr if (t > thr) else 0.0 for t in y1]
+y2 = [threshold if (t > threshold) else 0.0 for t in y1]
 x2 = x1
 
 a3.plot(x2, y2, c='b')
-a3.legend(['moving average', "threshold (" + str(thr) + ")"])
+a3.legend(['moving average', "threshold (" + str(threshold) + ")"])
 
 
 # draw data
