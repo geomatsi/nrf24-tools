@@ -61,6 +61,10 @@ y = [float(row.split(';')[1]) for row in data if len(row) > 0]
 # x-axis: calculate minute interval to have 10 x-axis marks
 mint = int((x[len(x) - 1] - x[0])/60/10)
 
+if mint == 0:
+	print "WARN: data range is less than 10 minutes, use 1min axis marks"
+	mint = int((x[len(x) - 1] - x[0])/60)
+
 # x-axis: convert epoch to date format
 x = map(datetime.datetime.fromtimestamp, x)
 
