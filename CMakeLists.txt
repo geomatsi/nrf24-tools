@@ -16,13 +16,19 @@ option (WITH_SERIAL_MOSQUITTO_TEST "Build serial port mosquitto test publisher" 
 ## select nRF24 connector: SPIDEV/UM232H/...
 
 file(GLOB_RECURSE UM232H_SRCS ${PROJECT_SOURCE_DIR}/drv/um232h/*.c)
-file(GLOB_RECURSE PCDUINO_SRCS ${PROJECT_SOURCE_DIR}/drv/pcduino/*.c)
+file(GLOB_RECURSE PCDUINO_UPSTREAM_SRCS ${PROJECT_SOURCE_DIR}/drv/pcduino-upstream/*.c)
+file(GLOB_RECURSE PCDUINO_LEGACY_SRCS ${PROJECT_SOURCE_DIR}/drv/pcduino-legacy/*.c)
 file(GLOB_RECURSE BONE_SRCS ${PROJECT_SOURCE_DIR}/drv/bone/*.c)
 
 set(NRF24_CONN "UM232H" CACHE STRING "nRF24x connector chosen by the user at CMake configure time")
 
-if ( NRF24_CONN STREQUAL "PCDUINO" )
-    set (CONN_SRCS ${PCDUINO_SRCS} common/gpio.c common/spi.c)
+if ( NRF24_CONN STREQUAL "PCDUINO_UPSTREAM" )
+    set (CONN_SRCS ${PCDUINO_UPSTREAM_SRCS} common/gpio.c common/spi.c)
+	message(STATUS "nRF24 connector: ${NRF24_CONN} (${CONN_SRCS})")
+endif ()
+
+if ( NRF24_CONN STREQUAL "PCDUINO_LEGACY" )
+    set (CONN_SRCS ${PCDUINO_LEGACY_SRCS} common/gpio.c common/spi.c)
 	message(STATUS "nRF24 connector: ${NRF24_CONN} (${CONN_SRCS})")
 endif ()
 
