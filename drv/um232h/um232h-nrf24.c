@@ -30,8 +30,11 @@ uint8_t f_spi_xfer(uint8_t data)
 
 /* */
 
-int nrf24_driver_setup(void)
+int nrf24_driver_setup(char *spidev)
 {
+	/* um232 gets device by USB Vendor ID and Product ID */
+	(void) spidev;
+
 	um232h_mpsse_simple_init(&fc);
 	um232h_set_loopback(&fc, 0);
 	um232h_set_speed(&fc, 100000);

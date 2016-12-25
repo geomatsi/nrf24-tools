@@ -23,8 +23,6 @@
 #define PCDUINO_NRF24_IRQ	231
 #define PCDUINO_NRF24_IRQ_NAME	"gpio231"
 
-#define PCDUINO_NRF24_SPIDEV	"/dev/spidev0.0"
-
 /* */
 
 static uint32_t speed = 1000000;
@@ -57,7 +55,7 @@ uint8_t f_spi_xfer(uint8_t dat)
 
 /* */
 
-int nrf24_driver_setup(void)
+int nrf24_driver_setup(char *spidev)
 {
 	/* GPIO */
 
@@ -80,7 +78,7 @@ int nrf24_driver_setup(void)
 
 	/* SPI */
 
-	if (0 > spi_open(PCDUINO_NRF24_SPIDEV))
+	if (0 > spi_open(spidev))
 		return -1;
 
 	if (0 > spi_info())

@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 
 	/* command line options */
 
-	char *spidev_name = "FIXME";
+	char *spidev_name = "/dev/spidev0.0";
 
 	char peer[2][6] = {
 		"EFCLI\0",
@@ -203,7 +203,7 @@ int main(int argc, char *argv[])
 
 	/* setup SPI and GPIO */
 
-	if (0 > nrf24_driver_setup()) {
+	if (0 > nrf24_driver_setup(spidev_name)) {
 		printf("ERR: can't setup gpio\n");
 		exit(-1);
 	}
