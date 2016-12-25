@@ -27,13 +27,13 @@
  *
  */
 
-#define BEAGLE_NRF24_CE        48
-#define BEAGLE_NRF24_CE_NAME   "gpio48"
+#define BEAGLE_NRF24_CE		48
+#define BEAGLE_NRF24_CE_NAME	"gpio48"
 
-#define BEAGLE_NRF24_CSN       49
-#define BEAGLE_NRF24_CSN_NAME  "gpio49"
+#define BEAGLE_NRF24_CSN	49
+#define BEAGLE_NRF24_CSN_NAME	"gpio49"
 
-#define BEAGLE_NRF24_SPIDEV    "/dev/spidev1.0"
+#define BEAGLE_NRF24_SPIDEV	"/dev/spidev1.0"
 
 /* */
 
@@ -69,7 +69,7 @@ uint8_t f_spi_xfer(uint8_t dat)
 
 int nrf24_driver_setup(void)
 {
-    /* GPIO */
+	/* GPIO */
 
 	if (0 > gpio_setup(BEAGLE_NRF24_CE, BEAGLE_NRF24_CE_NAME, DIR_OUT))
 		return -1;
@@ -77,7 +77,7 @@ int nrf24_driver_setup(void)
 	if (0 > gpio_setup(BEAGLE_NRF24_CSN, BEAGLE_NRF24_CSN_NAME, DIR_OUT))
 		return -1;
 
-    /* SPI */
+	/* SPI */
 
 	if (0 > spi_open(BEAGLE_NRF24_SPIDEV))
 		return -1;

@@ -33,17 +33,17 @@ void nrf24_test_usage(char *name)
 	printf("\t--peer2 <addr>\t\t\tnot yet supported\n");
 }
 
-dump_data(char *b, int n)
+void dump_data(char *b, int n)
 {
-    int p;
+	int p;
 
-    for(p = 0; p < n; p++) {
-        printf("0x%02x ", *(b + p));
-        if ((p > 0) && ((p % 64) == 0))
-            printf("\n");
-    }
+	for(p = 0; p < n; p++) {
+		printf("0x%02x ", *(b + p));
+		if ((p > 0) && ((p % 64) == 0))
+			printf("\n");
+	}
 
-    printf("\n");
+	printf("\n");
 }
 
 void decode_data(char *b, int n)
@@ -60,12 +60,12 @@ void decode_data(char *b, int n)
 
 	for (i = 0; i < msg->n_sensor; i++) {
 		printf("sensor[%lu] = %lu\n",
-			msg->sensor[i]->type, msg->sensor[i]->data);
+				msg->sensor[i]->type, msg->sensor[i]->data);
 	}
 
 	sensor_data_list__free_unpacked(msg, NULL);
 
-    return;
+	return;
 }
 
 /* */
@@ -91,25 +91,25 @@ int main(int argc, char *argv[])
 	char *spidev_name = "FIXME";
 
 	char peer[2][6] = {
-			"EFCLI\0",
-			"EFSN1\0",
+		"EFCLI\0",
+		"EFSN1\0",
 	};
 
 	int opt;
 	const char opts[] = "d:h:";
-    const struct option longopts[] = {
-        {"device", required_argument, NULL, 'd'},
-        {"peer1", required_argument, NULL, '0'},
-        {"peer2", required_argument, NULL, '1'},
-        {"dynamic-payload", no_argument, NULL, '2'},
-        {"payload-length", required_argument, NULL, '3'},
-        {"parse-message", no_argument, NULL, '4'},
-        {"help", optional_argument, NULL, 'h'},
-        {NULL,}
-    };
+	const struct option longopts[] = {
+		{"device", required_argument, NULL, 'd'},
+		{"peer1", required_argument, NULL, '0'},
+		{"peer2", required_argument, NULL, '1'},
+		{"dynamic-payload", no_argument, NULL, '2'},
+		{"payload-length", required_argument, NULL, '3'},
+		{"parse-message", no_argument, NULL, '4'},
+		{"help", optional_argument, NULL, 'h'},
+		{NULL,}
+	};
 
-    while (opt = getopt_long(argc, argv, opts, longopts, &opt), opt > 0) {
-        switch (opt) {
+	while (opt = getopt_long(argc, argv, opts, longopts, &opt), opt > 0) {
+		switch (opt) {
 			case 'd':
 				spidev_name = strdup(optarg);
 				break;
@@ -125,26 +125,26 @@ int main(int argc, char *argv[])
 				dynamic_payload = true;
 				break;
 			case '3':
-                recv_length = atoi(optarg);
-                if ((recv_length < 1) || (recv_length > 32)) {
-                    printf("ERR: invalid static payload length %d\n", recv_length);
-                    nrf24_test_usage(argv[0]);
-                    exit(-1);
-                }
-                break;
+				recv_length = atoi(optarg);
+				if ((recv_length < 1) || (recv_length > 32)) {
+					printf("ERR: invalid static payload length %d\n", recv_length);
+					nrf24_test_usage(argv[0]);
+					exit(-1);
+				}
+				break;
 			case '4':
 				parse_message = true;
 				break;
-            case 'h':
+			case 'h':
 			default:
 				nrf24_test_usage(argv[0]);
 				exit(0);
-        }
-    }
+		}
+	}
 
-    /* setup nRF24 driver */
+	/* setup nRF24 driver */
 
-    if (0 > nrf24_driver_setup()) {
+	if (0 > nrf24_driver_setup()) {
 		printf("ERR: can't setup driver for nrf24 radio\n");
 		exit(-1);
 	}
@@ -158,17 +158,17 @@ int main(int argc, char *argv[])
 
 	/* */
 
-    if (dynamic_payload)
-	    rf24_enable_dynamic_payloads(pnrf);
-    else
-	    rf24_set_payload_size(pnrf, recv_length);
+	if (dynamic_payload)
+		rf24_enable_dynamic_payloads(pnrf);
+	else
+		rf24_set_payload_size(pnrf, recv_length);
 
 	rf24_open_reading_pipe(pnrf, 0x0 /* pipe number */, addr0);
 	rf24_open_reading_pipe(pnrf, 0x1 /* pipe number */, addr1);
 
 	rf24_start_listening(pnrf);
 	rf24_print_status(rf24_get_status(pnrf));
-    rf24_print_details(pnrf);
+	rf24_print_details(pnrf);
 
 	/* */
 
@@ -182,8 +182,8 @@ int main(int argc, char *argv[])
 				printf("INFO: data ready in pipe 0x%02x\n", pipe);
 				memset(recv_buffer, 0x0, sizeof(recv_buffer));
 
-                if (dynamic_payload)
-				    recv_length = rf24_get_dynamic_payload_size(pnrf);
+				if (dynamic_payload)
+					recv_length = rf24_get_dynamic_payload_size(pnrf);
 
 				more_data = rf24_read(pnrf, recv_buffer, recv_length);
 				printf("INFO: dump received %d bytes\n", recv_length);

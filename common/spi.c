@@ -97,7 +97,7 @@ int spi_info(void)
 	}
 
 	printf("spi setup: mode = %u lsb = %u bits = %u speed = %u Hz\n",
-		(unsigned int) m, (unsigned int) o, (unsigned int) b, (unsigned int) s);
+			(unsigned int) m, (unsigned int) o, (unsigned int) b, (unsigned int) s);
 
 	return 0;
 }
@@ -106,10 +106,10 @@ int spi_info(void)
 uint8_t spi_xfer_fdx(uint8_t txdata)
 {
 	struct spi_ioc_transfer xfer[1];
-    uint8_t rxdata = 0xff;
+	uint8_t rxdata = 0xff;
 	int ret;
 
-    memset(xfer, 0, sizeof(xfer));
+	memset(xfer, 0, sizeof(xfer));
 
 	xfer[0].tx_buf = (unsigned long) &txdata;
 	xfer[0].rx_buf = (unsigned long) &rxdata;
@@ -129,10 +129,10 @@ uint8_t spi_xfer_fdx(uint8_t txdata)
 uint8_t spi_xfer_hdx(uint8_t txdata)
 {
 	struct spi_ioc_transfer xfer[2];
-    uint8_t rxdata = 0;
+	uint8_t rxdata = 0;
 	int ret;
 
-    memset(xfer, 0, sizeof(xfer));
+	memset(xfer, 0, sizeof(xfer));
 
 	xfer[0].tx_buf = (unsigned long) &txdata;
 	xfer[0].len = 1;

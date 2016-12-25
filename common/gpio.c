@@ -125,23 +125,23 @@ int gpio_write(char *name, int value)
 	}
 
 	if (value == 0)
-    {
-        ret = fprintf(file, "0\n");
-        if (ret < 0)
-        {
-            perror("can't write 0 to gpio");
-            return ret;
-        }
-    }
+	{
+		ret = fprintf(file, "0\n");
+		if (ret < 0)
+		{
+			perror("can't write 0 to gpio");
+			return ret;
+		}
+	}
 	else
-    {
-        ret = fprintf(file, "1\n");
-        if (ret < 0)
-        {
-            perror("can't write 1 to gpio");
-            return ret;
-        }
-    }
+	{
+		ret = fprintf(file, "1\n");
+		if (ret < 0)
+		{
+			perror("can't write 1 to gpio");
+			return ret;
+		}
+	}
 
 	fclose(file);
 }
