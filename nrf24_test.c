@@ -48,22 +48,22 @@ void dump_data(char *b, int n)
 
 void decode_data(char *b, int n)
 {
-	SensorDataList *msg;
+	NodeSensorList *msg;
 	int i;
 
-	msg = sensor_data_list__unpack(NULL, n, b);
+	msg = node_sensor_list__unpack(NULL, n, b);
 
 	if (msg == NULL) {
 		printf("error: can't unpack message\n");
 		return;
 	}
 
+	printf("node = %lu\n", msg->node->node);
 	for (i = 0; i < msg->n_sensor; i++) {
-		printf("sensor[%lu] = %lu\n",
-				msg->sensor[i]->type, msg->sensor[i]->data);
+		printf("sensor[%lu] = %lu\n", msg->sensor[i]->type, msg->sensor[i]->data);
 	}
 
-	sensor_data_list__free_unpacked(msg, NULL);
+	node_sensor_list__free_unpacked(msg, NULL);
 
 	return;
 }
