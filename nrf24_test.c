@@ -151,7 +151,7 @@ int main(int argc, char *argv[])
 
 	rf24_init(&nrf);
 	pnrf = &nrf;
-	rf24_print_status(rf24_get_status(pnrf));
+	rf24_print_status(pnrf);
 
 	/* */
 
@@ -164,7 +164,7 @@ int main(int argc, char *argv[])
 	rf24_setup_prx(pnrf, 0x1 /* pipe number */, addr1);
 
 	rf24_start_prx(pnrf);
-	rf24_print_status(rf24_get_status(pnrf));
+	rf24_print_status(pnrf);
 
 	/* */
 
