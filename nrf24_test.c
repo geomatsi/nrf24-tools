@@ -15,7 +15,6 @@
 struct rf24 nrf = {
 	.csn = f_csn,
 	.ce = f_ce,
-	.spi_set_speed = f_spi_set_speed,
 	.spi_xfer = f_spi_xfer,
 };
 
@@ -81,10 +80,9 @@ int main(int argc, char *argv[])
 	uint8_t recv_buffer[32];
 	int recv_length = 32;
 
-	uint32_t more_data;
-	uint8_t pipe;
-
+	enum rf24_rx_status ret;
 	struct rf24 *pnrf;
+	int pipe;
 
 	/* command line options */
 
@@ -153,52 +151,58 @@ int main(int argc, char *argv[])
 
 	rf24_init(&nrf);
 	pnrf = &nrf;
-
 	rf24_print_status(rf24_get_status(pnrf));
 
 	/* */
 
 	if (dynamic_payload)
-		rf24_enable_dynamic_payloads(pnrf);
+		rf24_enable_dyn_payload(pnrf);
 	else
 		rf24_set_payload_size(pnrf, recv_length);
 
-	rf24_open_reading_pipe(pnrf, 0x0 /* pipe number */, addr0);
-	rf24_open_reading_pipe(pnrf, 0x1 /* pipe number */, addr1);
+	rf24_setup_prx(pnrf, 0x0 /* pipe number */, addr0);
+	rf24_setup_prx(pnrf, 0x1 /* pipe number */, addr1);
 
-	rf24_start_listening(pnrf);
+	rf24_start_prx(pnrf);
 	rf24_print_status(rf24_get_status(pnrf));
-	rf24_print_details(pnrf);
 
 	/* */
 
 	while (1) {
 
-		if (rf24_available(pnrf, &pipe)) {
+		while(!rf24_rx_ready(pnrf, &pipe))
+			usleep(100000);
 
-			if ((pipe < 0) || (pipe > 5)) {
-				printf("WARN: invalid pipe number 0x%02x\n", (int) pipe);
-			} else {
-				printf("INFO: data ready in pipe 0x%02x\n", pipe);
-				memset(recv_buffer, 0x0, sizeof(recv_buffer));
+		ret = rf24_rx_pipe_check(pnrf, pipe);
 
-				if (dynamic_payload)
-					recv_length = rf24_get_dynamic_payload_size(pnrf);
+		if (ret != RF24_RX_OK) {
+			printf("WARN: pipe check error 0x%02x\n", (int)pipe);
+			rf24_flush_rx(pnrf);
+			continue;
+		}
 
-				more_data = rf24_read(pnrf, recv_buffer, recv_length);
-				printf("INFO: dump received %d bytes\n", recv_length);
+		printf("INFO: data ready in pipe 0x%02x\n", pipe);
+		memset(recv_buffer, 0x0, sizeof(recv_buffer));
 
-				if (parse_message) {
-					decode_data((char *)recv_buffer, recv_length);
-				} else {
-					dump_data((char *)recv_buffer, recv_length);
-				}
-
-				if (!more_data)
-					printf("WARN: RX_FIFO not empty: %d\n", more_data);
+		if (dynamic_payload) {
+			recv_length = (int)rf24_get_dyn_payload_size(pnrf);
+			if (recv_length == 0xff) {
+				printf("WARN: failed to get dynamic payload length\n");
+				rf24_flush_rx(pnrf);
+				continue;
 			}
 		}
 
-		usleep(100000);
+		ret = rf24_recv(pnrf, recv_buffer, recv_length);
+		if (ret != RF24_RX_OK) {
+			printf("WARN: failed to receive rx data: 0x%02x\n", ret);
+			rf24_flush_rx(pnrf);
+			continue;
+		}
+
+		if (parse_message)
+			decode_data((char *)recv_buffer, recv_length);
+		else
+			dump_data((char *)recv_buffer, recv_length);
 	}
 }
