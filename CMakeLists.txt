@@ -44,7 +44,7 @@ if ( NRF24_CONN STREQUAL "UM232H" )
 endif ()
 
 if ( NRF24_CONN STREQUAL "ORANGE_PI_ONE" )
-	set (CONN_SRCS ${ORANGE_PI_ONE_SRCS} common/gpio.c common/spi.c)
+	set (CONN_SRCS ${ORANGE_PI_ONE_SRCS} common/gpio.c common/spi.c common/delay.c)
 	message(STATUS "nRF24 connector: ${NRF24_CONN} (${CONN_SRCS})")
 endif ()
 
