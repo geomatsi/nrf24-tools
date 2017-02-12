@@ -23,6 +23,7 @@ int spi_info(void);
 void spi_close(void);
 
 uint8_t spi_xfer_fdx(uint8_t txdata);
+int spi_xfer_mfdx(uint8_t *txdata, uint8_t *rxbuf, int len);
 uint8_t spi_xfer_hdx(uint8_t txdata);
 
 #endif /* SPI_HAL_H */

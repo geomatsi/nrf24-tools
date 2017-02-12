@@ -125,6 +125,28 @@ uint8_t spi_xfer_fdx(uint8_t txdata)
 	return rxdata;
 }
 
+/* full-duplex multi-byte */
+int spi_xfer_mfdx(uint8_t *txbuf, uint8_t *rxbuf, int len)
+{
+	struct spi_ioc_transfer xfer[1];
+	int ret;
+
+	memset(xfer, 0, sizeof(xfer));
+
+	xfer[0].tx_buf = (unsigned long)txbuf;
+	xfer[0].rx_buf = (unsigned long)rxbuf;
+	xfer[0].len = len;
+
+	ret = ioctl(fd, SPI_IOC_MESSAGE(1), xfer);
+	if (ret < 0)
+	{
+		perror("can't perform spi transfer");
+		return ret;
+	}
+
+	return 0;
+}
+
 /* half-duplex */
 uint8_t spi_xfer_hdx(uint8_t txdata)
 {

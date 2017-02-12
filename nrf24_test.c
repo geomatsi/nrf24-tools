@@ -16,6 +16,7 @@ struct rf24 nrf = {
 	.csn = f_csn,
 	.ce = f_ce,
 	.spi_xfer = f_spi_xfer,
+	.spi_multi_xfer = f_spi_multi_xfer,
 };
 
 /* */

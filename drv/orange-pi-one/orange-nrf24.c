@@ -3,19 +3,15 @@
 
 /*
  * Hardware setup: orange-pi-one
+ * Notes:
+ *   - SPI h/w CSN line is used, no need to toggle GPIO line
  */
 
-/* GPIO TODO */
-#define ORANGE_NRF24_CE		0
-#define ORANGE_NRF24_CE_NAME	"gpio0"
+#define ORANGE_NRF24_CE		21
+#define ORANGE_NRF24_CE_NAME	"gpio21"
 
-/* GPIO TODO */
-#define ORANGE_NRF24_CSN	0
-#define ORANGE_NRF24_CSN_NAME	"gpio0"
-
-/* GPIO TODO */
-#define ORANGE_NRF24_IRQ	0
-#define ORANGE_NRF24_IRQ_NAME	"gpio0"
+#define ORANGE_NRF24_IRQ	68
+#define ORANGE_NRF24_IRQ_NAME	"gpio68"
 
 /* */
 
@@ -27,24 +23,18 @@ static uint8_t lsb = 0;
 
 /* */
 
-void f_csn(int level)
-{
-	(void) gpio_write(ORANGE_NRF24_CSN_NAME, level);
-}
+void (*f_csn)(int level) = NULL;
 
 void f_ce(int level)
 {
 	(void) gpio_write(ORANGE_NRF24_CE_NAME, level);
 }
 
-void f_spi_set_speed(int khz)
-{
-	/* not implemented */
-}
+uint8_t (*f_spi_xfer)(uint8_t dat) = NULL;
 
-uint8_t f_spi_xfer(uint8_t dat)
+int f_spi_multi_xfer(uint8_t *tx, uint8_t *rx, int len)
 {
-	return spi_xfer_fdx(dat);
+	return spi_xfer_mfdx(tx, rx, len);
 }
 
 /* */
@@ -54,9 +44,6 @@ int nrf24_driver_setup(char *spidev)
 	/* GPIO */
 
 	if (0 > gpio_setup(ORANGE_NRF24_CE, ORANGE_NRF24_CE_NAME, DIR_OUT))
-		return -1;
-
-	if (0 > gpio_setup(ORANGE_NRF24_CSN, ORANGE_NRF24_CSN_NAME, DIR_OUT))
 		return -1;
 
 	if (0 > gpio_setup(ORANGE_NRF24_IRQ, ORANGE_NRF24_IRQ_NAME, DIR_IN))

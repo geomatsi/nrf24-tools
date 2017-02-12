@@ -88,6 +88,11 @@ NAMES nrf24
 PATHS /usr/lib /usr/local/lib
 )
 
+FIND_LIBRARY(NRF24_MB_LIBRARY
+NAMES nrf24_mb
+PATHS /usr/lib /usr/local/lib
+)
+
 FIND_LIBRARY(PROTOBUF_C_LIBRARY
 NAMES protobuf-c
 PATHS /usr/lib /usr/local/lib
@@ -128,8 +133,13 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 ## set libraries paths
 
 if (WITH_NRF24_TEST)
-	target_link_libraries(nrf24_test ${NRF24_LIBRARY})
 	target_link_libraries(nrf24_test ${PROTOBUFC_LIBRARIES})
+
+	if ( NRF24_CONN STREQUAL "ORANGE_PI_ONE" )
+		target_link_libraries(nrf24_test ${NRF24_MB_LIBRARY})
+	else ()
+		target_link_libraries(nrf24_test ${NRF24_LIBRARY})
+	endif ()
 
 	if ( NRF24_CONN STREQUAL "UM232H" )
 		target_link_libraries(nrf24_test ${FTDI_LIBRARY})
@@ -137,9 +147,14 @@ if (WITH_NRF24_TEST)
 endif ()
 
 if (WITH_NRF24_MOSQUITTO_TEST)
-	target_link_libraries(nrf24_mosquitto_test ${NRF24_LIBRARY})
 	target_link_libraries(nrf24_mosquitto_test ${MOSQUITTO_LIBRARY})
 	target_link_libraries(nrf24_mosquitto_test ${PROTOBUFC_LIBRARIES})
+
+	if ( NRF24_CONN STREQUAL "ORANGE_PI_ONE" )
+		target_link_libraries(nrf24_mosquitto_test ${NRF24_MB_LIBRARY})
+	else ()
+		target_link_libraries(nrf24_mosquitto_test ${NRF24_LIBRARY})
+	endif ()
 
 	if ( NRF24_CONN STREQUAL "UM232H" )
 		target_link_libraries(nrf24_mosquitto_test ${FTDI_LIBRARY})

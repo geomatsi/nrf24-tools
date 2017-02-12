@@ -41,15 +41,12 @@ void f_ce(int level)
 	(void) gpio_write(PCDUINO_NRF24_CE_NAME, level);
 }
 
-void f_spi_set_speed(int khz)
-{
-	/* not implemented */
-}
-
 uint8_t f_spi_xfer(uint8_t dat)
 {
 	return spi_xfer_fdx(dat);
 }
+
+int (*f_spi_multi_xfer)(uint8_t *tx, uint8_t *rx, int len) = NULL;
 
 /* */
 
