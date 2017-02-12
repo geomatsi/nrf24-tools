@@ -24,7 +24,7 @@ file(GLOB_RECURSE ORANGE_PI_ONE_SRCS ${PROJECT_SOURCE_DIR}/drv/orange-pi-one/*.c
 set(NRF24_CONN "UM232H" CACHE STRING "nRF24x connector chosen by the user at CMake configure time")
 
 if ( NRF24_CONN STREQUAL "PCDUINO_UPSTREAM" )
-	set (CONN_SRCS ${PCDUINO_UPSTREAM_SRCS} common/gpio.c common/spi.c commono/delay.c)
+	set (CONN_SRCS ${PCDUINO_UPSTREAM_SRCS} common/gpio.c common/spi.c common/delay.c)
 	message(STATUS "nRF24 connector: ${NRF24_CONN} (${CONN_SRCS})")
 endif ()
 
