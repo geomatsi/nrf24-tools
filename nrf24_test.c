@@ -12,12 +12,7 @@
 
 /* */
 
-struct rf24 nrf = {
-	.csn = f_csn,
-	.ce = f_ce,
-	.spi_xfer = f_spi_xfer,
-	.spi_multi_xfer = f_spi_multi_xfer,
-};
+static struct rf24 nrf;
 
 /* */
 
@@ -143,15 +138,17 @@ int main(int argc, char *argv[])
 
 	/* setup nRF24 driver */
 
-	if (0 > nrf24_driver_setup(spidev_name)) {
+	pnrf = &nrf;
+	memset(pnrf, 0x0, sizeof(*pnrf));
+
+	if (0 > nrf24_driver_setup(pnrf, spidev_name)) {
 		printf("ERR: can't setup driver for nrf24 radio\n");
 		exit(-1);
 	}
 
 	/* setup nRF24L01 */
 
-	rf24_init(&nrf);
-	pnrf = &nrf;
+	rf24_init(pnrf);
 	rf24_print_status(pnrf);
 
 	/* */

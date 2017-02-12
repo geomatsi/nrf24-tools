@@ -1,3 +1,5 @@
+#include <RF24.h>
+
 #include "gpio.h"
 #include "spi.h"
 
@@ -33,27 +35,32 @@ static uint8_t lsb = 0;
 
 /* */
 
-void f_csn(int level)
+static void f_csn(int level)
 {
 	(void) gpio_write(PCDUINO_NRF24_CSN_NAME, level);
 }
 
-void f_ce(int level)
+static void f_ce(int level)
 {
 	(void) gpio_write(PCDUINO_NRF24_CE_NAME, level);
 }
 
-uint8_t f_spi_xfer(uint8_t dat)
+static uint8_t f_spi_xfer(uint8_t dat)
 {
 	return spi_xfer_fdx(dat);
 }
 
-int (*f_spi_multi_xfer)(uint8_t *tx, uint8_t *rx, int len) = NULL;
-
 /* */
 
-int nrf24_driver_setup(char *spidev)
+int nrf24_driver_setup(struct rf24 *pnrf, char *spidev)
 {
+	/* rf24 ops */
+
+	pnrf->csn = f_csn;
+	pnrf->ce = f_ce;
+	pnrf->spi_xfer = f_spi_xfer;
+	pnrf->spi_multi_xfer = NULL;
+
 	/* GPIO */
 
 	if (0 > gpio_setup(PCDUINO_NRF24_CE, PCDUINO_NRF24_CE_NAME, DIR_OUT))

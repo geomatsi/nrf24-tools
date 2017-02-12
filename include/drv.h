@@ -1,11 +1,8 @@
 #ifndef __DRV_H__
 #define __DRV_H__
 
-int nrf24_driver_setup(char *spidev);
+#include <RF24.h>
 
-void f_csn(int level);
-void f_ce(int level);
-uint8_t f_spi_xfer(uint8_t dat);
-int f_spi_multi_xfer(uint8_t *tx, uint8_t *rx, int len);
+int nrf24_driver_setup(struct rf24 *pnrf, char *spidev);
 
 #endif /* __DRV_H__ */
