@@ -24,22 +24,22 @@ file(GLOB_RECURSE ORANGE_PI_ONE_SRCS ${PROJECT_SOURCE_DIR}/drv/orange-pi-one/*.c
 set(NRF24_CONN "UM232H" CACHE STRING "nRF24x connector chosen by the user at CMake configure time")
 
 if ( NRF24_CONN STREQUAL "PCDUINO_UPSTREAM" )
-	set (CONN_SRCS ${PCDUINO_UPSTREAM_SRCS} common/gpio.c common/spi.c)
+	set (CONN_SRCS ${PCDUINO_UPSTREAM_SRCS} common/gpio.c common/spi.c commono/delay.c)
 	message(STATUS "nRF24 connector: ${NRF24_CONN} (${CONN_SRCS})")
 endif ()
 
 if ( NRF24_CONN STREQUAL "PCDUINO_LEGACY" )
-	set (CONN_SRCS ${PCDUINO_LEGACY_SRCS} common/gpio.c common/spi.c)
+	set (CONN_SRCS ${PCDUINO_LEGACY_SRCS} common/gpio.c common/spi.c common/delay.c)
 	message(STATUS "nRF24 connector: ${NRF24_CONN} (${CONN_SRCS})")
 endif ()
 
 if ( NRF24_CONN STREQUAL "BONE" )
-	set (CONN_SRCS ${BONE_SRCS} common/gpio.c common/spi.c)
+	set (CONN_SRCS ${BONE_SRCS} common/gpio.c common/spi.c common/delay.c)
 	message(STATUS "nRF24 connector: ${NRF24_CONN} (${CONN_SRCS})")
 endif ()
 
 if ( NRF24_CONN STREQUAL "UM232H" )
-	set (CONN_SRCS ${UM232H_SRCS})
+	set (CONN_SRCS ${UM232H_SRCS} common/delay.c)
 	message(STATUS "nRF24 connector: ${NRF24_CONN} (${CONN_SRCS})")
 endif ()
 
@@ -52,12 +52,12 @@ endif ()
 
 if (WITH_NRF24_TEST)
 	PROTOBUFC_GENERATE_C(PROTO_SRCS PROTO_HDRS msg.proto)
-	add_executable(nrf24_test nrf24_test.c delay.c ${CONN_SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
+	add_executable(nrf24_test nrf24_test.c ${CONN_SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
 endif ()
 
 if (WITH_NRF24_MOSQUITTO_TEST)
 	PROTOBUFC_GENERATE_C(PROTO_SRCS PROTO_HDRS msg.proto)
-	add_executable(nrf24_mosquitto_test nrf24_mosquitto_test.c delay.c ${CONN_SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
+	add_executable(nrf24_mosquitto_test nrf24_mosquitto_test.c ${CONN_SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
 endif ()
 
 if (WITH_SERIAL_MOSQUITTO_TEST)
