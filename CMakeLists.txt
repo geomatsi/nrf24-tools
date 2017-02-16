@@ -51,17 +51,25 @@ endif ()
 ## executable targets
 
 if (WITH_NRF24_TEST)
-	PROTOBUFC_GENERATE_C(PROTO_SRCS PROTO_HDRS msg.proto)
-	add_executable(nrf24_test nrf24_test.c ${CONN_SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
+	PROTOBUFC_GENERATE_C(PROTO_SRCS PROTO_HDRS proto msg.proto)
+	add_executable(
+		nrf24_test
+		src/nrf24_test.c
+		${CONN_SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
 endif ()
 
 if (WITH_NRF24_MOSQUITTO_TEST)
-	PROTOBUFC_GENERATE_C(PROTO_SRCS PROTO_HDRS msg.proto)
-	add_executable(nrf24_mosquitto_test nrf24_mosquitto_test.c ${CONN_SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
+	PROTOBUFC_GENERATE_C(PROTO_SRCS PROTO_HDRS proto msg.proto)
+	add_executable(
+		nrf24_mosquitto_test
+		src/nrf24_mosquitto_test.c
+		${CONN_SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
 endif ()
 
 if (WITH_SERIAL_MOSQUITTO_TEST)
-	add_executable(serial_mosquitto_test serial_mosquitto_test.c)
+	add_executable(
+		serial_mosquitto_test
+		src/serial_mosquitto_test.c)
 endif ()
 
 ## find headers
@@ -110,9 +118,8 @@ PATHS /usr/lib /usr/lib/x86_64-linux-gnu
 
 ## set headers paths
 
-include_directories(${PROJECT_SOURCE_DIR}/include)
-
 include_directories(${NRF24_INCLUDE_DIR})
+include_directories(${PROTOBUFC_INCLUDE_DIRS})
 
 if ( NRF24_CONN STREQUAL "UM232H" )
 	include_directories(${FTDI_INCLUDE_DIR})
@@ -126,8 +133,7 @@ if (WITH_SERIAL_MOSQUITTO_TEST)
 	include_directories(${MOSQUITTO_INCLUDE_DIR})
 endif ()
 
-include_directories(${PROTOBUFC_INCLUDE_DIRS})
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
+include_directories(${PROJECT_SOURCE_DIR}/include)
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 ## set libraries paths
@@ -170,6 +176,6 @@ endif ()
 # set path to spidev.h header for specific kernel
 
 if(DEFINED KERNEL_DIR)
-    include_directories(${KERNEL_DIR}/include/linux/spi)
-    include_directories(${KERNEL_DIR}/include/uapi/linux/spi)
+	include_directories(${KERNEL_DIR}/include/linux/spi)
+	include_directories(${KERNEL_DIR}/include/uapi/linux/spi)
 endif ()

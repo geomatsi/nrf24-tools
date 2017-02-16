@@ -24,15 +24,12 @@
 #   find_package(ProtobufC REQUIRED)
 #   include_directories(${PROTOBUFC_INCLUDE_DIRS})
 #   include_directories(${CMAKE_CURRENT_BINARY_DIR})
-#   PROTOBUFC_GENERATE_C(PROTO_SOURCES PROTO_HEADERS protobuf.proto)
-#   add_executable(bar bar.c ${PROTO_SRCn} ${PROTO_HDRS})
+#   PROTOBUFC_GENERATE_C(PROTO_SOURCES PROTO_HEADERS protobuf.dir protobuf.proto)
+#   add_executable(bar bar.c ${PROTO_SRCS} ${PROTO_HDRS})
 #   target_link_libraries(bar ${PROTOBUF_LIBRARIES})
 #
 # NOTE: You may need to link against pthreads, depending
 #       on the platform.
-#
-# NOTE: The PROTOBUF_GENERATE_CPP macro & add_executable() or add_library()
-#       calls only work properly within the same directory.
 #
 #  ====================================================================
 
@@ -55,54 +52,61 @@
 
 set(PROTBUFC_SOURCE_EXTENSION "pb-c.c")
 set(PROTBUFC_HEADER_EXTENSION "pb-c.h")
-function(PROTOBUFC_GENERATE_C SOURCES HEADERS)
+
+function(PROTOBUFC_GENERATE_C SOURCES HEADERS PROTO_DIR)
 	if(NOT ARGN)
 		message(SEND_ERROR "Error: PROTOBUFC_GENERATE_C() called without any proto files")
- 	 	return()
+		return()
 	endif(NOT ARGN)
 
- foreach(FIL ${ARGN})
-    get_filename_component(ABS_FIL ${FIL} ABSOLUTE)
-    get_filename_component(FIL_WE ${FIL} NAME_WE)
-    get_filename_component(FIL_PATH ${ABS_FIL} PATH)
+	foreach(PROTO_NAME ${ARGN})
+		set(FIL ${PROTO_DIR}/${PROTO_NAME})
+		get_filename_component(ABS_FIL ${FIL} ABSOLUTE)
+		get_filename_component(FIL_WE ${FIL} NAME_WE)
+		get_filename_component(FIL_PATH ${ABS_FIL} PATH)
 
-    list(APPEND ${SOURCES} "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}.${PROTBUFC_SOURCE_EXTENSION}")
-    list(APPEND ${HEADERS} "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}.${PROTBUFC_HEADER_EXTENSION}")
+		list(APPEND ${SOURCES} "${CMAKE_CURRENT_BINARY_DIR}/${PROTO_DIR}/${FIL_WE}.${PROTBUFC_SOURCE_EXTENSION}")
+		list(APPEND ${HEADERS} "${CMAKE_CURRENT_BINARY_DIR}/${PROTO_DIR}/${FIL_WE}.${PROTBUFC_HEADER_EXTENSION}")
 
-    add_custom_command(
-      OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}.${PROTBUFC_SOURCE_EXTENSION}"
-             "${CMAKE_CURRENT_BINARY_DIR}/${FIL_WE}.${PROTBUFC_HEADER_EXTENSION}"
-      COMMAND  ${PROTOBUFC_COMPILER}
-      ARGS --c_out ${CMAKE_CURRENT_BINARY_DIR} -I ${CMAKE_CURRENT_SOURCE_DIR} -I ${FIL_PATH} ${ABS_FIL}
-      DEPENDS ${ABS_FIL}
-      COMMENT "Running protobuf-c compiler on ${FIL}"
-      VERBATIM )
-  endforeach()
-  set_source_files_properties(${${SOURCES}} ${${HEADERS}} PROPERTIES GENERATED TRUE)
-  set(${SOURCES} ${${SOURCES}} PARENT_SCOPE)
-  set(${HEADERS} ${${HEADERS}} PARENT_SCOPE)
+		add_custom_command(
+			OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${PROTO_DIR}/${FIL_WE}.${PROTBUFC_SOURCE_EXTENSION}"
+			"${CMAKE_CURRENT_BINARY_DIR}/${PROTO_DIR}/${FIL_WE}.${PROTBUFC_HEADER_EXTENSION}"
+			COMMAND  ${PROTOBUFC_COMPILER}
+			ARGS --c_out ${CMAKE_CURRENT_BINARY_DIR} -I ${CMAKE_CURRENT_SOURCE_DIR} -I ${FIL_PATH} ${ABS_FIL}
+			DEPENDS ${ABS_FIL}
+			COMMENT "Running protobuf-c compiler on ${FIL}"
+			VERBATIM )
+	endforeach()
+
+	set_source_files_properties(${${SOURCES}} ${${HEADERS}} PROPERTIES GENERATED TRUE)
+	set(${SOURCES} ${${SOURCES}} PARENT_SCOPE)
+	set(${HEADERS} ${${HEADERS}} PARENT_SCOPE)
 endfunction()
 
 find_library(PROTOBUFC_LIBRARY
-							NAMES "protobuf-c"
-							PATHS "/usr" "/usr/local" "/opt" ENV PROTOBUFC_ROOTDIR
-							PATH_SUFFIXES "lib")
+		NAMES "protobuf-c"
+		PATHS "/usr" "/usr/local" "/opt" ENV PROTOBUFC_ROOTDIR
+		PATH_SUFFIXES "lib")
 mark_as_advanced(PROTOBUFC_LIBRARY)
 
 find_path(PROTOBUFC_INCLUDE_DIR
-							NAMES "google/protobuf-c/protobuf-c.h"
-							PATHS "/usr" "/usr/local" "/opt" ENV PROTOBUFC_ROOTDIR
-							PATH_SUFFIXES "include")
+		NAMES "google/protobuf-c/protobuf-c.h"
+		PATHS "/usr" "/usr/local" "/opt" ENV PROTOBUFC_ROOTDIR
+		PATH_SUFFIXES "include")
 mark_as_advanced(PROTOBUFC_INCLUDE_DIR)
 
 find_program(PROTOBUFC_COMPILER
-							NAMES "protoc-c"
-							PATHS "/usr" "/usr/local" "/opt" ENV PROTOBUFC_ROOTDIR
-							PATH_SUFFIXES "bin")
+		NAMES "protoc-c"
+		PATHS "/usr" "/usr/local" "/opt" ENV PROTOBUFC_ROOTDIR
+		PATH_SUFFIXES "bin")
 mark_as_advanced(PROTOBUFC_COMPILER)
 
 include(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(ProtobufC DEFAULT_MSG PROTOBUFC_LIBRARY PROTOBUFC_COMPILER PROTOBUFC_INCLUDE_DIR )
+FIND_PACKAGE_HANDLE_STANDARD_ARGS(
+	ProtobufC
+	DEFAULT_MSG PROTOBUFC_LIBRARY
+	PROTOBUFC_COMPILER
+	PROTOBUFC_INCLUDE_DIR )
 
 if (PROTOBUFC_FOUND)
 	set(PROTOBUFC_LIBRARIES ${PROTOBUFC_LIBRARY})

@@ -6,28 +6,9 @@
 #include <string.h>
 #include <stdio.h>
 
-#include <mosquitto.h>
-
-#include "drv.h"
 #include "RF24.h"
-#include "msg.pb-c.h"
-
-/* */
-
-void mqtt_callback_log(struct mosquitto *mqtt, void *user, int level, const char *str)
-{
-	printf("INFO MOSQUITTO<%d> %s\n", level, str);
-}
-
-void mqtt_callback_publish(struct mosquitto *mqtt, void *user, int mid)
-{
-	printf("INFO MOSQUITTO: message %d published\n", mid);
-}
-
-void mqtt_callback_connect(struct mosquitto *mqtt, void *user, int result)
-{
-	printf("INFO MOSQUITTO: connection response %d\n", result);
-}
+#include "drv.h"
+#include "proto/msg.pb-c.h"
 
 /* */
 
@@ -42,7 +23,7 @@ void nrf24_test_usage(char *name)
 	printf("\t-d, --device <spidev>\t\tspidev for nRF24L01, default is '/dev/spidev0.0\n");
 	printf("\t--dynamic-payload\t\tenable dynamic payload support\n");
 	printf("\t--payload-length <length>\tset static payload length to 0..32 bytes (default value is 32)\n");
-	printf("\t--publish-message\t\tpublish messages to MQTT broker\n");
+	printf("\t--parse-message\t\t\tparse messages according to protobuf description\n");
 	printf("\t--peer1 <addr>\t\t\tnot yet supported\n");
 	printf("\t--peer2 <addr>\t\t\tnot yet supported\n");
 }
@@ -60,10 +41,8 @@ void dump_data(char *b, int n)
 	printf("\n");
 }
 
-void publish_data(struct mosquitto *m, char *b, int n)
+void decode_data(char *b, int n)
 {
-	char mqtt_message[64];
-	char mqtt_topic[64];
 	NodeSensorList *msg;
 	int i;
 
@@ -76,15 +55,7 @@ void publish_data(struct mosquitto *m, char *b, int n)
 
 	printf("node = %lu\n", msg->node->node);
 	for (i = 0; i < msg->n_sensor; i++) {
-		memset(mqtt_message, 0x0, sizeof(mqtt_message));
-		memset(mqtt_topic, 0x0, sizeof(mqtt_topic));
 		printf("sensor[%lu] = %lu\n", msg->sensor[i]->type, msg->sensor[i]->data);
-		snprintf(mqtt_message, sizeof(mqtt_message) - 1, "%lu", msg->sensor[i]->data);
-		snprintf(mqtt_topic, sizeof(mqtt_message) - 1, "node%lu/sensor%lu",
-			 msg->node->node, msg->sensor[i]->type);
-		if(mosquitto_publish(m, NULL, mqtt_topic, strlen(mqtt_message), mqtt_message, 0, 0)) {
-			printf("ERR: mosquitto could not publish message\n");
-		}
 	}
 
 	node_sensor_list__free_unpacked(msg, NULL);
@@ -100,7 +71,7 @@ int main(int argc, char *argv[])
 	uint8_t addr1[] = {'E', 'F', 'S', 'N', '1'};
 
 	bool dynamic_payload = false;
-	bool publish_message = false;
+	bool parse_message = false;
 
 	uint8_t recv_buffer[32];
 	int recv_length = 32;
@@ -108,14 +79,6 @@ int main(int argc, char *argv[])
 	enum rf24_rx_status ret;
 	struct rf24 *pnrf;
 	int pipe;
-
-	char *host = "localhost";
-	int port = 1883;
-	int keepalive = 60;
-	bool clean_session = true;
-
-	struct mosquitto *mqtt = NULL;
-	char *mqtt_id = "nrf24hub";
 
 	/* command line options */
 
@@ -134,7 +97,7 @@ int main(int argc, char *argv[])
 		{"peer2", required_argument, NULL, '1'},
 		{"dynamic-payload", no_argument, NULL, '2'},
 		{"payload-length", required_argument, NULL, '3'},
-		{"publish-message", no_argument, NULL, '4'},
+		{"parse-message", no_argument, NULL, '4'},
 		{"help", optional_argument, NULL, 'h'},
 		{NULL,}
 	};
@@ -164,7 +127,7 @@ int main(int argc, char *argv[])
 				}
 				break;
 			case '4':
-				publish_message = true;
+				parse_message = true;
 				break;
 			case 'h':
 			default:
@@ -173,37 +136,13 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	/* setup mosquitto */
-
-	mosquitto_lib_init();
-
-	mqtt = mosquitto_new(mqtt_id, clean_session, NULL);
-	if (!mqtt) {
-		printf("ERR: can not allocate mosquitto context\n");
-		exit(-1);
-	}
-
-	mosquitto_log_callback_set(mqtt, mqtt_callback_log);
-	mosquitto_publish_callback_set(mqtt, mqtt_callback_publish);
-	mosquitto_connect_callback_set(mqtt, mqtt_callback_connect);
-
-	if(mosquitto_connect(mqtt, host, port, keepalive)) {
-		printf("ERR: can not connect to mosquitto server %s:%d\n", host, port);
-		exit(-1);
-	}
-
-	if (mosquitto_loop_start(mqtt)) {
-		printf("ERR: can not start mosquitto thread\n");
-		exit(-1);
-	}
-
-	/* setup SPI and GPIO */
+	/* setup nRF24 driver */
 
 	pnrf = &nrf;
 	memset(pnrf, 0x0, sizeof(*pnrf));
 
 	if (0 > nrf24_driver_setup(pnrf, spidev_name)) {
-		printf("ERR: can't setup gpio\n");
+		printf("ERR: can't setup driver for nrf24 radio\n");
 		exit(-1);
 	}
 
@@ -259,8 +198,8 @@ int main(int argc, char *argv[])
 			continue;
 		}
 
-		if (publish_message)
-			publish_data(mqtt, (char *)recv_buffer, recv_length);
+		if (parse_message)
+			decode_data((char *)recv_buffer, recv_length);
 		else
 			dump_data((char *)recv_buffer, recv_length);
 	}
