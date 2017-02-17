@@ -46,16 +46,16 @@ int main(int argc, char *argv[])
 	uint8_t addr[] = {'E', 'F', 'C', 'L', 'I'};
 
 	bool dynamic_payload = false;
-
+	enum rf24_rx_status ret;
 	uint8_t recv_buffer[32];
 	int recv_length = 32;
-	int channel;
-	int rate;
-	int tmp;
-
-	enum rf24_rx_status ret;
 	struct rf24 *pnrf;
 	int pipe;
+	int tmp;
+
+	/* use sane defaults */
+	int channel = 76;
+	int rate = RF24_RATE_1M;
 
 	/* command line options */
 
