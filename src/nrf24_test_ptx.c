@@ -21,7 +21,8 @@ void nrf24_test_usage(char *name)
 	printf("%-30s%s\n", "-h, --help", "this help message");
 	printf("%-30s%s\n", "-d, --device <spidev>", "spidev for nRF24L01, default is '/dev/spidev0.0");
 	printf("%-30s%s\n", "-c, --channel <num>", "set channel number: 0 .. 127");
-	printf("%-30s%s\n", "-r, --rate <rate>", "set data rate: 0 - 1M, 1 - 2M, 2 - 250K");
+	printf("%-30s%s\n", "-r, --rate <rate>", "set data rate: 0(1M), 1(2M), 2(250K)");
+	printf("%-30s%s\n", "-e, --crc <mode>", "set CRC encoding scheme: 0(none), 1 (8 bits), 2(16 bits)");
 	printf("%-30s%s\n", "-p, --power <level>", "set TX output power: 0(-18dBm), 1(-12dBm), 2(-6dBm), 3(0dBm)");
 	printf("%-30s%s\n", "--dynamic-payload", "enable dynamic payload support");
 }
@@ -53,19 +54,21 @@ int main(int argc, char *argv[])
 
 	/* use sane defaults */
 	int channel = 76;
-	int power = RF24_PA_MAX;
 	int rate = RF24_RATE_1M;
+	int crc = RF24_CRC_16_BITS;
+	int power = RF24_PA_MAX;
 
 	/* command line options */
 
 	char *spidev_name = "/dev/spidev0.0";
 
 	int opt;
-	const char opts[] = "p:r:c:d:h";
+	const char opts[] = "e:p:r:c:d:h";
 	const struct option longopts[] = {
 		{"device", required_argument, NULL, 'd'},
 		{"channel", required_argument, NULL, 'c'},
 		{"rate", required_argument, NULL, 'r'},
+		{"crc", required_argument, NULL, 'e'},
 		{"power", required_argument, NULL, 'p'},
 		{"dynamic-payload", no_argument, NULL, '0'},
 		{"help", optional_argument, NULL, 'h'},
@@ -88,6 +91,13 @@ int main(int argc, char *argv[])
 				rate = atoi(optarg);
 				if ((rate < 0) || (rate > 2)) {
 					printf("ERR: invalid rate %d\n", rate);
+					exit(-1);
+				}
+				break;
+			case 'e':
+				crc = atoi(optarg);
+				if ((crc < 0) || (crc > 2)) {
+					printf("ERR: invalid CRC mode %d\n", crc);
 					exit(-1);
 				}
 				break;
@@ -137,6 +147,13 @@ int main(int argc, char *argv[])
 	tmp = rf24_get_data_rate(pnrf);
 	if (tmp != rate) {
 		printf("couldn't set data rate: expected %d actual %d\n", rate, tmp);
+		exit(-1);
+	}
+
+	rf24_set_crc_mode(pnrf, crc);
+	tmp = rf24_get_crc_mode(pnrf);
+	if (tmp != crc) {
+		printf("couldn't set CRC mode: expected %d actual %d\n", crc, tmp);
 		exit(-1);
 	}
 
