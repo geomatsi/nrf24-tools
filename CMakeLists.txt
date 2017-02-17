@@ -53,16 +53,16 @@ endif ()
 if (WITH_NRF24_TEST)
 	PROTOBUFC_GENERATE_C(PROTO_SRCS PROTO_HDRS proto msg.proto)
 	add_executable(
-		nrf24_test
-		src/nrf24_test.c
+		nrf24_test_hub
+		src/nrf24_test_hub.c
 		${CONN_SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
 endif ()
 
 if (WITH_NRF24_MOSQUITTO_TEST)
 	PROTOBUFC_GENERATE_C(PROTO_SRCS PROTO_HDRS proto msg.proto)
 	add_executable(
-		nrf24_mosquitto_test
-		src/nrf24_mosquitto_test.c
+		nrf24_mosquitto_pub
+		src/nrf24_mosquitto_pub.c
 		${CONN_SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
 endif ()
 
@@ -139,31 +139,31 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 ## set libraries paths
 
 if (WITH_NRF24_TEST)
-	target_link_libraries(nrf24_test ${PROTOBUFC_LIBRARIES})
+	target_link_libraries(nrf24_test_hub ${PROTOBUFC_LIBRARIES})
 
 	if ( NRF24_CONN STREQUAL "ORANGE_PI_ONE" )
-		target_link_libraries(nrf24_test ${NRF24_MB_LIBRARY})
+		target_link_libraries(nrf24_test_hub ${NRF24_MB_LIBRARY})
 	else ()
-		target_link_libraries(nrf24_test ${NRF24_LIBRARY})
+		target_link_libraries(nrf24_test_hub ${NRF24_LIBRARY})
 	endif ()
 
 	if ( NRF24_CONN STREQUAL "UM232H" )
-		target_link_libraries(nrf24_test ${FTDI_LIBRARY})
+		target_link_libraries(nrf24_test_hub ${FTDI_LIBRARY})
 	endif ()
 endif ()
 
 if (WITH_NRF24_MOSQUITTO_TEST)
-	target_link_libraries(nrf24_mosquitto_test ${MOSQUITTO_LIBRARY})
-	target_link_libraries(nrf24_mosquitto_test ${PROTOBUFC_LIBRARIES})
+	target_link_libraries(nrf24_mosquitto_pub ${MOSQUITTO_LIBRARY})
+	target_link_libraries(nrf24_mosquitto_pub ${PROTOBUFC_LIBRARIES})
 
 	if ( NRF24_CONN STREQUAL "ORANGE_PI_ONE" )
-		target_link_libraries(nrf24_mosquitto_test ${NRF24_MB_LIBRARY})
+		target_link_libraries(nrf24_mosquitto_pub ${NRF24_MB_LIBRARY})
 	else ()
-		target_link_libraries(nrf24_mosquitto_test ${NRF24_LIBRARY})
+		target_link_libraries(nrf24_mosquitto_pub ${NRF24_LIBRARY})
 	endif ()
 
 	if ( NRF24_CONN STREQUAL "UM232H" )
-		target_link_libraries(nrf24_mosquitto_test ${FTDI_LIBRARY})
+		target_link_libraries(nrf24_mosquitto_pub ${FTDI_LIBRARY})
 	endif ()
 endif ()
 
