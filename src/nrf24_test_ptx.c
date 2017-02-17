@@ -21,6 +21,7 @@ void nrf24_test_usage(char *name)
 	printf("%-30s%s\n", "-h, --help", "this help message");
 	printf("%-30s%s\n", "-d, --device <spidev>", "spidev for nRF24L01, default is '/dev/spidev0.0");
 	printf("%-30s%s\n", "-c, --channel <num>", "set channel number: 0 .. 127");
+	printf("%-30s%s\n", "-r, --rate <rate>", "set data rate: 0 - 1M, 1 - 2M, 2 - 250K");
 	printf("%-30s%s\n", "--dynamic-payload", "enable dynamic payload support");
 }
 
@@ -48,16 +49,19 @@ int main(int argc, char *argv[])
 	enum rf24_tx_status ret;
 	struct rf24 *pnrf;
 	int channel;
+	int rate;
+	int tmp;
 
 	/* command line options */
 
 	char *spidev_name = "/dev/spidev0.0";
 
 	int opt;
-	const char opts[] = "c:d:h";
+	const char opts[] = "r:c:d:h";
 	const struct option longopts[] = {
 		{"device", required_argument, NULL, 'd'},
 		{"channel", required_argument, NULL, 'c'},
+		{"rate", required_argument, NULL, 'r'},
 		{"dynamic-payload", no_argument, NULL, '0'},
 		{"help", optional_argument, NULL, 'h'},
 		{NULL,}
@@ -72,6 +76,13 @@ int main(int argc, char *argv[])
 				channel = atoi(optarg);
 				if ((channel < 0) || (channel > 127)) {
 					printf("ERR: invalid channel %d\n", channel);
+					exit(-1);
+				}
+				break;
+			case 'r':
+				rate = atoi(optarg);
+				if ((rate < 0) || (rate > 2)) {
+					printf("ERR: invalid rate %d\n", rate);
 					exit(-1);
 				}
 				break;
@@ -100,7 +111,7 @@ int main(int argc, char *argv[])
 	rf24_init(pnrf);
 	rf24_print_status(pnrf);
 
-	/* */
+	/* modify default settings */
 
 	if (dynamic_payload)
 		rf24_enable_dyn_payload(pnrf);
@@ -108,6 +119,16 @@ int main(int argc, char *argv[])
 		rf24_set_payload_size(pnrf, sizeof(send_buffer));
 
 	rf24_set_channel(pnrf, channel);
+	/* TODO: read and check channel */
+
+	rf24_set_data_rate(pnrf, rate);
+	tmp = rf24_get_data_rate(pnrf);
+	if (tmp != rate) {
+		printf("couldn't set data rate: expected %d actual %d\n", rate, tmp);
+		exit(-1);
+	}
+
+	/* start PTX mode */
 
 	rf24_setup_ptx(pnrf, addr);
 	rf24_start_ptx(pnrf);
