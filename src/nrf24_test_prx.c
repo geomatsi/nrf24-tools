@@ -142,7 +142,11 @@ int main(int argc, char *argv[])
 		rf24_set_payload_size(pnrf, recv_length);
 
 	rf24_set_channel(pnrf, channel);
-	/* TODO: read and check channel */
+	tmp = rf24_get_channel(pnrf);
+	if (tmp != channel) {
+		printf("couldn't set channel: expected %d actual %d\n", channel, tmp);
+		exit(-1);
+	}
 
 	rf24_set_data_rate(pnrf, rate);
 	tmp = rf24_get_data_rate(pnrf);
