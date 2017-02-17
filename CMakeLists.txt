@@ -9,8 +9,10 @@ find_package(ProtobufC REQUIRED)
 
 ## options
 
-option (WITH_NRF24_TEST "Build nRF24L01 basic test tool" ON)
-option (WITH_NRF24_MOSQUITTO_TEST "Build nRF24L01 mosquitto test publisher" OFF)
+option (WITH_NRF24_TEST_PTX "Build nRF24L01 PTX test tool" ON)
+option (WITH_NRF24_TEST_PRX "Build nRF24L01 PRX test tool" ON)
+option (WITH_NRF24_TEST_HUB "Build nRF24L01 PRX MultiCeiver test tool" ON)
+option (WITH_NRF24_MOSQUITTO_PUB "Build nRF24L01 mosquitto publisher" OFF)
 option (WITH_SERIAL_MOSQUITTO_TEST "Build serial port mosquitto test publisher" OFF)
 
 ## select nRF24 connector: SPIDEV/UM232H/...
@@ -50,7 +52,15 @@ endif ()
 
 ## executable targets
 
-if (WITH_NRF24_TEST)
+if (WITH_NRF24_TEST_PTX)
+	add_executable( nrf24_test_ptx src/nrf24_test_ptx.c ${CONN_SRCS})
+endif ()
+
+if (WITH_NRF24_TEST_PRX)
+	add_executable( nrf24_test_prx src/nrf24_test_prx.c ${CONN_SRCS})
+endif ()
+
+if (WITH_NRF24_TEST_HUB)
 	PROTOBUFC_GENERATE_C(PROTO_SRCS PROTO_HDRS proto msg.proto)
 	add_executable(
 		nrf24_test_hub
@@ -58,7 +68,7 @@ if (WITH_NRF24_TEST)
 		${CONN_SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
 endif ()
 
-if (WITH_NRF24_MOSQUITTO_TEST)
+if (WITH_NRF24_MOSQUITTO_PUB)
 	PROTOBUFC_GENERATE_C(PROTO_SRCS PROTO_HDRS proto msg.proto)
 	add_executable(
 		nrf24_mosquitto_pub
@@ -138,7 +148,31 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 ## set libraries paths
 
-if (WITH_NRF24_TEST)
+if (WITH_NRF24_TEST_PTX)
+	if ( NRF24_CONN STREQUAL "ORANGE_PI_ONE" )
+		target_link_libraries(nrf24_test_ptx ${NRF24_MB_LIBRARY})
+	else ()
+		target_link_libraries(nrf24_test_ptx ${NRF24_LIBRARY})
+	endif ()
+
+	if ( NRF24_CONN STREQUAL "UM232H" )
+		target_link_libraries(nrf24_test_ptx ${FTDI_LIBRARY})
+	endif ()
+endif ()
+
+if (WITH_NRF24_TEST_PRX)
+	if ( NRF24_CONN STREQUAL "ORANGE_PI_ONE" )
+		target_link_libraries(nrf24_test_prx ${NRF24_MB_LIBRARY})
+	else ()
+		target_link_libraries(nrf24_test_prx ${NRF24_LIBRARY})
+	endif ()
+
+	if ( NRF24_CONN STREQUAL "UM232H" )
+		target_link_libraries(nrf24_test_prx ${FTDI_LIBRARY})
+	endif ()
+endif ()
+
+if (WITH_NRF24_TEST_HUB)
 	target_link_libraries(nrf24_test_hub ${PROTOBUFC_LIBRARIES})
 
 	if ( NRF24_CONN STREQUAL "ORANGE_PI_ONE" )
@@ -152,7 +186,7 @@ if (WITH_NRF24_TEST)
 	endif ()
 endif ()
 
-if (WITH_NRF24_MOSQUITTO_TEST)
+if (WITH_NRF24_MOSQUITTO_PUB)
 	target_link_libraries(nrf24_mosquitto_pub ${MOSQUITTO_LIBRARY})
 	target_link_libraries(nrf24_mosquitto_pub ${PROTOBUFC_LIBRARIES})
 
