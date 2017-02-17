@@ -18,10 +18,11 @@ static struct rf24 nrf;
 void nrf24_test_usage(char *name)
 {
 	printf("usage: %s [-h] -d <spidev>\n", name);
-	printf("\t-h, --help\t\t\tthis help message\n");
-	printf("\t-d, --device <spidev>\t\tspidev for nRF24L01, default is '/dev/spidev0.0\n");
-	printf("\t--dynamic-payload\t\tenable dynamic payload support\n");
-	printf("\t--payload-length <length>\tset static payload length to 0..32 bytes (default value is 32)\n");
+	printf("%-30s%s\n", "-h, --help", "this help message");
+	printf("%-30s%s\n", "-d, --device <spidev>", "spidev for nRF24L01, default is '/dev/spidev0.0");
+	printf("%-30s%s\n", "-c, --channel <num>", "set channel number: 0 .. 127");
+	printf("%-30s%s\n", "--dynamic-payload", "enable dynamic payload support");
+	printf("%-30s%s\n", "--payload-length <length>", "set static payload length to 0..32 bytes (default value is 32)");
 }
 
 void dump_data(char *b, int n)
@@ -47,6 +48,7 @@ int main(int argc, char *argv[])
 
 	uint8_t recv_buffer[32];
 	int recv_length = 32;
+	int channel;
 
 	enum rf24_rx_status ret;
 	struct rf24 *pnrf;
@@ -57,9 +59,10 @@ int main(int argc, char *argv[])
 	char *spidev_name = "/dev/spidev0.0";
 
 	int opt;
-	const char opts[] = "d:h:";
+	const char opts[] = "c:d:h";
 	const struct option longopts[] = {
 		{"device", required_argument, NULL, 'd'},
+		{"channel", required_argument, NULL, 'c'},
 		{"dynamic-payload", no_argument, NULL, '0'},
 		{"payload-length", required_argument, NULL, '1'},
 		{"help", optional_argument, NULL, 'h'},
@@ -71,6 +74,13 @@ int main(int argc, char *argv[])
 			case 'd':
 				spidev_name = strdup(optarg);
 				break;
+			case 'c':
+				channel = atoi(optarg);
+				if ((channel < 0) || (channel > 127)) {
+					printf("ERR: invalid channel %d\n", channel);
+					exit(-1);
+				}
+				break;
 			case '0':
 				dynamic_payload = true;
 				break;
@@ -78,7 +88,6 @@ int main(int argc, char *argv[])
 				recv_length = atoi(optarg);
 				if ((recv_length < 1) || (recv_length > 32)) {
 					printf("ERR: invalid static payload length %d\n", recv_length);
-					nrf24_test_usage(argv[0]);
 					exit(-1);
 				}
 				break;
@@ -110,6 +119,8 @@ int main(int argc, char *argv[])
 		rf24_enable_dyn_payload(pnrf);
 	else
 		rf24_set_payload_size(pnrf, recv_length);
+
+	rf24_set_channel(pnrf, channel);
 
 	rf24_setup_prx(pnrf, 0x0 /* pipe number */, addr);
 	rf24_start_prx(pnrf);

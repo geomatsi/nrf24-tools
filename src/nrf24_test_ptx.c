@@ -18,9 +18,10 @@ static struct rf24 nrf;
 void nrf24_test_usage(char *name)
 {
 	printf("usage: %s [-h] -d <spidev>\n", name);
-	printf("\t-h, --help\t\t\tthis help message\n");
-	printf("\t-d, --device <spidev>\t\tspidev for nRF24L01, default is '/dev/spidev0.0\n");
-	printf("\t--dynamic-payload\t\tenable dynamic payload support\n");
+	printf("%-30s%s\n", "-h, --help", "this help message");
+	printf("%-30s%s\n", "-d, --device <spidev>", "spidev for nRF24L01, default is '/dev/spidev0.0");
+	printf("%-30s%s\n", "-c, --channel <num>", "set channel number: 0 .. 127");
+	printf("%-30s%s\n", "--dynamic-payload", "enable dynamic payload support");
 }
 
 void dump_data(char *b, int n)
@@ -46,15 +47,17 @@ int main(int argc, char *argv[])
 	bool dynamic_payload = false;
 	enum rf24_tx_status ret;
 	struct rf24 *pnrf;
+	int channel;
 
 	/* command line options */
 
 	char *spidev_name = "/dev/spidev0.0";
 
 	int opt;
-	const char opts[] = "d:h:";
+	const char opts[] = "c:d:h";
 	const struct option longopts[] = {
 		{"device", required_argument, NULL, 'd'},
+		{"channel", required_argument, NULL, 'c'},
 		{"dynamic-payload", no_argument, NULL, '0'},
 		{"help", optional_argument, NULL, 'h'},
 		{NULL,}
@@ -64,6 +67,13 @@ int main(int argc, char *argv[])
 		switch (opt) {
 			case 'd':
 				spidev_name = strdup(optarg);
+				break;
+			case 'c':
+				channel = atoi(optarg);
+				if ((channel < 0) || (channel > 127)) {
+					printf("ERR: invalid channel %d\n", channel);
+					exit(-1);
+				}
 				break;
 			case '0':
 				dynamic_payload = true;
@@ -96,6 +106,8 @@ int main(int argc, char *argv[])
 		rf24_enable_dyn_payload(pnrf);
 	else
 		rf24_set_payload_size(pnrf, sizeof(send_buffer));
+
+	rf24_set_channel(pnrf, channel);
 
 	rf24_setup_ptx(pnrf, addr);
 	rf24_start_ptx(pnrf);
