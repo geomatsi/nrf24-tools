@@ -26,17 +26,20 @@ file(GLOB_RECURSE ORANGE_PI_ONE_SRCS ${PROJECT_SOURCE_DIR}/drv/orange-pi-one/*.c
 set(NRF24_CONN "UM232H" CACHE STRING "nRF24x connector chosen by the user at CMake configure time")
 
 if ( NRF24_CONN STREQUAL "PCDUINO_UPSTREAM" )
-	set (CONN_SRCS ${PCDUINO_UPSTREAM_SRCS} common/gpio.c common/spi.c common/delay.c)
+	set (CONN_SRCS ${PCDUINO_UPSTREAM_SRCS}
+		common/gpio-sysfs.c common/spi-spidev.c common/delay.c)
 	message(STATUS "nRF24 connector: ${NRF24_CONN} (${CONN_SRCS})")
 endif ()
 
 if ( NRF24_CONN STREQUAL "PCDUINO_LEGACY" )
-	set (CONN_SRCS ${PCDUINO_LEGACY_SRCS} common/gpio.c common/spi.c common/delay.c)
+	set (CONN_SRCS ${PCDUINO_LEGACY_SRCS}
+		common/gpio-sysfs.c common/spi-spidev.c common/delay.c)
 	message(STATUS "nRF24 connector: ${NRF24_CONN} (${CONN_SRCS})")
 endif ()
 
 if ( NRF24_CONN STREQUAL "BONE" )
-	set (CONN_SRCS ${BONE_SRCS} common/gpio.c common/spi.c common/delay.c)
+	set (CONN_SRCS ${BONE_SRCS}
+		common/gpio-sysfs.c common/spi-spidev.c common/delay.c)
 	message(STATUS "nRF24 connector: ${NRF24_CONN} (${CONN_SRCS})")
 endif ()
 
@@ -46,7 +49,8 @@ if ( NRF24_CONN STREQUAL "UM232H" )
 endif ()
 
 if ( NRF24_CONN STREQUAL "ORANGE_PI_ONE" )
-	set (CONN_SRCS ${ORANGE_PI_ONE_SRCS} common/gpio.c common/spi.c common/delay.c)
+	set (CONN_SRCS ${ORANGE_PI_ONE_SRCS}
+		common/gpio-sysfs.c common/spi-spidev.c common/delay.c)
 	message(STATUS "nRF24 connector: ${NRF24_CONN} (${CONN_SRCS})")
 endif ()
 
