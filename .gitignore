@@ -3,3 +3,5 @@ build
 scripts/data
 patches
 tags
+
+.*.swp

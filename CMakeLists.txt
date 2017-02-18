@@ -12,6 +12,7 @@ find_package(ProtobufC REQUIRED)
 option (WITH_NRF24_TEST_PTX "Build nRF24L01 PTX test tool" ON)
 option (WITH_NRF24_TEST_PRX "Build nRF24L01 PRX test tool" ON)
 option (WITH_NRF24_TEST_HUB "Build nRF24L01 PRX MultiCeiver test tool" ON)
+option (WITH_NRF24_DUMP_REGS "Build nRF24L01 register dump tool" ON)
 option (WITH_NRF24_MOSQUITTO_PUB "Build nRF24L01 mosquitto publisher" OFF)
 option (WITH_SERIAL_MOSQUITTO_TEST "Build serial port mosquitto test publisher" OFF)
 
@@ -62,6 +63,10 @@ endif ()
 
 if (WITH_NRF24_TEST_PRX)
 	add_executable( nrf24_test_prx src/nrf24_test_prx.c ${CONN_SRCS})
+endif ()
+
+if (WITH_NRF24_DUMP_REGS)
+	add_executable( nrf24_dump_regs src/nrf24_dump_regs.c ${CONN_SRCS})
 endif ()
 
 if (WITH_NRF24_TEST_HUB)
@@ -173,6 +178,18 @@ if (WITH_NRF24_TEST_PRX)
 
 	if ( NRF24_CONN STREQUAL "UM232H" )
 		target_link_libraries(nrf24_test_prx ${FTDI_LIBRARY})
+	endif ()
+endif ()
+
+if (WITH_NRF24_DUMP_REGS)
+	if ( NRF24_CONN STREQUAL "ORANGE_PI_ONE" )
+		target_link_libraries(nrf24_dump_regs ${NRF24_MB_LIBRARY})
+	else ()
+		target_link_libraries(nrf24_dump_regs ${NRF24_LIBRARY})
+	endif ()
+
+	if ( NRF24_CONN STREQUAL "UM232H" )
+		target_link_libraries(nrf24_dump_regs ${FTDI_LIBRARY})
 	endif ()
 endif ()
 
