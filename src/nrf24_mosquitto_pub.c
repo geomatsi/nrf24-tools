@@ -38,13 +38,14 @@ static struct rf24 nrf;
 void nrf24_test_usage(char *name)
 {
 	printf("usage: %s [-h] -d <spidev>\n", name);
-	printf("\t-h, --help\t\t\tthis help message\n");
-	printf("\t-d, --device <spidev>\t\tspidev for nRF24L01, default is '/dev/spidev0.0\n");
-	printf("\t--dynamic-payload\t\tenable dynamic payload support\n");
-	printf("\t--payload-length <length>\tset static payload length to 0..32 bytes (default value is 32)\n");
-	printf("\t--publish-message\t\tpublish messages to MQTT broker\n");
-	printf("\t--peer1 <addr>\t\t\tnot yet supported\n");
-	printf("\t--peer2 <addr>\t\t\tnot yet supported\n");
+	printf("%-30s%s\n", "-h, --help", "this help message");
+	printf("%-30s%s\n", "-d, --device <spidev>", "spidev for nRF24L01, default is '/dev/spidev0.0");
+	printf("%-30s%s\n", "-c, --channel <num>", "set channel number: 0 .. 127");
+	printf("%-30s%s\n", "-r, --rate <rate>", "set data rate: 0(1M), 1(2M), 2(250K)");
+	printf("%-30s%s\n", "-e, --crc <mode>", "set CRC encoding scheme: 0(none), 1 (8 bits), 2(16 bits)");
+	printf("%-30s%s\n", "--dynamic-payload", "enable dynamic payload support");
+	printf("%-30s%s\n", "--payload-length <length>", "set static payload length to 0..32 bytes (default value is 32)");
+	printf("%-30s%s\n", "--publish-message", "publish messages to MQTT broker");
 }
 
 void dump_data(char *b, int n)
@@ -109,11 +110,16 @@ int main(int argc, char *argv[])
 	struct rf24 *pnrf;
 	int pipe;
 
+	/* use sane nRF24 defaults */
+
+	int channel = 76;
+	int rate = RF24_RATE_1M;
+	int crc = RF24_CRC_16_BITS;
+
 	char *host = "localhost";
 	int port = 1883;
 	int keepalive = 60;
 	bool clean_session = true;
-
 	struct mosquitto *mqtt = NULL;
 	char *mqtt_id = "nrf24hub";
 
@@ -121,20 +127,16 @@ int main(int argc, char *argv[])
 
 	char *spidev_name = "/dev/spidev0.0";
 
-	char peer[2][6] = {
-		"EFCLI\0",
-		"EFSN1\0",
-	};
-
 	int opt;
-	const char opts[] = "d:h:";
+	const char opts[] = "e:r:c:d:h";
 	const struct option longopts[] = {
 		{"device", required_argument, NULL, 'd'},
-		{"peer1", required_argument, NULL, '0'},
-		{"peer2", required_argument, NULL, '1'},
-		{"dynamic-payload", no_argument, NULL, '2'},
-		{"payload-length", required_argument, NULL, '3'},
-		{"publish-message", no_argument, NULL, '4'},
+		{"channel", required_argument, NULL, 'c'},
+		{"rate", required_argument, NULL, 'r'},
+		{"crc", required_argument, NULL, 'e'},
+		{"dynamic-payload", no_argument, NULL, '0'},
+		{"payload-length", required_argument, NULL, '1'},
+		{"publish-message", no_argument, NULL, '2'},
 		{"help", optional_argument, NULL, 'h'},
 		{NULL,}
 	};
@@ -144,26 +146,38 @@ int main(int argc, char *argv[])
 			case 'd':
 				spidev_name = strdup(optarg);
 				break;
-			case '0':
-				if (strlen(optarg) >= 5)
-					strncpy(peer[0], optarg, 5);
-				break;
-			case '1':
-				if (strlen(optarg) >= 5)
-					strncpy(peer[1], optarg, 5);
-				break;
-			case '2':
-				dynamic_payload = true;
-				break;
-			case '3':
-				recv_length = atoi(optarg);
-				if ((recv_length < 1) || (recv_length > 32)) {
-					printf("ERR: invalid static payload length %d\n", recv_length);
-					nrf24_test_usage(argv[0]);
+			case 'c':
+				channel = atoi(optarg);
+				if ((channel < 0) || (channel > 127)) {
+					printf("ERR: invalid channel %d\n", channel);
 					exit(-1);
 				}
 				break;
-			case '4':
+			case 'r':
+				rate = atoi(optarg);
+				if ((rate < 0) || (rate > 2)) {
+					printf("ERR: invalid rate %d\n", rate);
+					exit(-1);
+				}
+				break;
+			case 'e':
+				crc = atoi(optarg);
+				if ((crc < 0) || (crc > 2)) {
+					printf("ERR: invalid CRC mode %d\n", crc);
+					exit(-1);
+				}
+				break;
+			case '0':
+				dynamic_payload = true;
+				break;
+			case '1':
+				recv_length = atoi(optarg);
+				if ((recv_length < 1) || (recv_length > 32)) {
+					printf("ERR: invalid static payload length %d\n", recv_length);
+					exit(-1);
+				}
+				break;
+			case '2':
 				publish_message = true;
 				break;
 			case 'h':
@@ -218,6 +232,10 @@ int main(int argc, char *argv[])
 		rf24_enable_dyn_payload(pnrf);
 	else
 		rf24_set_payload_size(pnrf, recv_length);
+
+	rf24_set_channel(pnrf, channel);
+	rf24_set_data_rate(pnrf, rate);
+	rf24_set_crc_mode(pnrf, crc);
 
 	rf24_setup_prx(pnrf, 0x0 /* pipe number */, addr0);
 	rf24_setup_prx(pnrf, 0x1 /* pipe number */, addr1);
