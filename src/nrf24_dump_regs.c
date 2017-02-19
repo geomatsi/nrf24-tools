@@ -56,7 +56,7 @@ char *addr_handler(struct rf24 *pnrf, struct reg_handler *ph)
 		case RX_ADDR_P1:
 		case TX_ADDR:
 			len = rf24_get_register(pnrf, SETUP_AW);
-			if ((len >= 1) || (len <= 3)) {
+			if ((len >= 1) && (len <= 3)) {
 				len += 2;
 			} else {
 				snprintf(buffer, sizeof(buffer), "invalid SETUP_AW: %d", len);
