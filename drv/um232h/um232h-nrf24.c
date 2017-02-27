@@ -44,4 +44,6 @@ int nrf24_driver_setup(struct rf24 *pnrf, char *spidev)
 	um232h_mpsse_simple_init(&fc);
 	um232h_set_loopback(&fc, 0);
 	um232h_set_speed(&fc, 100000);
+
+	return 0;
 }

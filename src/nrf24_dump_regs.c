@@ -279,7 +279,6 @@ int nrf24_list_all_regs(struct rf24 *pnrf __attribute__((unused)), char *param _
 int nrf24_dump_all_regs(struct rf24 *pnrf, char *param __attribute__((unused)))
 {
 	struct reg_handler *ph;
-	uint8_t val;
 	int i;
 
 	for (i = 0; i < sizeof(nrf24_regs) / sizeof(struct reg_handler); i++) {
@@ -363,7 +362,6 @@ int main(int argc, char *argv[])
 	struct rf24 nrf;
 
 	char *spidev = "/dev/spidev0.0";
-	uint8_t reg;
 	char *cmd;
 	int i;
 

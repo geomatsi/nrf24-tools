@@ -76,13 +76,13 @@ void publish_data(struct mosquitto *m, char *b, int n)
 		return;
 	}
 
-	printf("node = %lu\n", msg->node->node);
+	printf("node = %u\n", msg->node->node);
 	for (i = 0; i < msg->n_sensor; i++) {
 		memset(mqtt_message, 0x0, sizeof(mqtt_message));
 		memset(mqtt_topic, 0x0, sizeof(mqtt_topic));
-		printf("sensor[%lu] = %lu\n", msg->sensor[i]->type, msg->sensor[i]->data);
-		snprintf(mqtt_message, sizeof(mqtt_message) - 1, "%lu", msg->sensor[i]->data);
-		snprintf(mqtt_topic, sizeof(mqtt_message) - 1, "node%lu/sensor%lu",
+		printf("sensor[%u] = %u\n", msg->sensor[i]->type, msg->sensor[i]->data);
+		snprintf(mqtt_message, sizeof(mqtt_message) - 1, "%u", msg->sensor[i]->data);
+		snprintf(mqtt_topic, sizeof(mqtt_message) - 1, "node%u/sensor%u",
 			 msg->node->node, msg->sensor[i]->type);
 		if(mosquitto_publish(m, NULL, mqtt_topic, strlen(mqtt_message), mqtt_message, 0, 0)) {
 			printf("ERR: mosquitto could not publish message\n");

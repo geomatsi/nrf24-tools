@@ -95,7 +95,6 @@ int publish_data(struct mosquitto *m, char *data, int n)
 {
 	char mqtt_message[DATA_SIZE];
 	char mqtt_topic[64];
-	int i;
 
 	memset(mqtt_message, 0x0, sizeof(mqtt_message));
 	memset(mqtt_topic, 0x0, sizeof(mqtt_topic));
@@ -442,7 +441,7 @@ int main(int argc, char *argv[])
 
 	/* setup non-blocking stdin if in foreground mode */
 
-	if (daemon) {
+	if (daemon_mode) {
 
 		tfd = -1;
 
@@ -473,7 +472,7 @@ int main(int argc, char *argv[])
 		FD_ZERO(&rset);
 		FD_SET(pfd, &rset);
 
-		if (!daemon)
+		if (!daemon_mode)
 			FD_SET(tfd, &rset);
 
 		tv.tv_sec = 5;
@@ -595,7 +594,7 @@ int main(int argc, char *argv[])
 
 stdin_out:
 
-	if (!daemon) {
+	if (!daemon_mode) {
 		if (tcsetattr(tfd, TCSANOW, &old_kterm) < 0) {
 			perror("ERR: restore stdin tcsetattr");
 		}
