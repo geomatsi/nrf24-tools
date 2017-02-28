@@ -28,7 +28,7 @@ void nrf24_test_usage(char *name)
 	printf("%-30s%s\n", "--payload-length <length>", "set static payload length to 0..32 bytes (default value is 32)");
 }
 
-void dump_data(char *b, int n)
+void dump_data(uint8_t *b, int n)
 {
 	int p;
 
@@ -219,6 +219,6 @@ int main(int argc, char *argv[])
 			continue;
 		}
 
-		dump_data((char *)recv_buffer, recv_length);
+		dump_data(recv_buffer, recv_length);
 	}
 }

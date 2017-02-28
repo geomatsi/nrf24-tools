@@ -29,19 +29,6 @@ void nrf24_test_usage(char *name)
 	printf("%-30s%s\n", "--payload-length <length>", "set static payload length to 0..32 bytes (default value is 32)");
 }
 
-void dump_data(char *b, int n)
-{
-	int p;
-
-	for(p = 0; p < n; p++) {
-		printf("0x%02x ", *(b + p));
-		if ((p > 0) && ((p % 64) == 0))
-			printf("\n");
-	}
-
-	printf("\n");
-}
-
 /* */
 
 int main(int argc, char *argv[])
@@ -114,7 +101,7 @@ int main(int argc, char *argv[])
 				}
 				break;
 			case 'm':
-				strncpy(send_buffer, optarg, sizeof(send_buffer) - 1);
+				memcpy(send_buffer, optarg, sizeof(send_buffer) - 1);
 				break;
 			case '0':
 				dynamic_payload = true;

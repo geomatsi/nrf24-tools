@@ -49,7 +49,7 @@ void nrf24_test_usage(char *name)
 	printf("%-30s%s\n", "--publish-message", "publish messages to MQTT broker");
 }
 
-void dump_data(char *b, int n)
+void dump_data(uint8_t *b, int n)
 {
 	int p;
 
@@ -62,7 +62,7 @@ void dump_data(char *b, int n)
 	printf("\n");
 }
 
-void publish_data(struct mosquitto *m, char *b, int n)
+void publish_data(struct mosquitto *m, uint8_t *b, int n)
 {
 	char mqtt_message[64];
 	char mqtt_topic[64];
@@ -289,8 +289,8 @@ int main(int argc, char *argv[])
 		}
 
 		if (publish_message)
-			publish_data(mqtt, (char *)recv_buffer, recv_length);
+			publish_data(mqtt, recv_buffer, recv_length);
 		else
-			dump_data((char *)recv_buffer, recv_length);
+			dump_data(recv_buffer, recv_length);
 	}
 }

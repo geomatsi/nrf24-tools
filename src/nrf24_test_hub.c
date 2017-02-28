@@ -30,7 +30,7 @@ void nrf24_test_usage(char *name)
 	printf("%-30s%s\n", "--parse-message", "parse messages according to protobuf description");
 }
 
-void dump_data(char *b, int n)
+void dump_data(uint8_t *b, int n)
 {
 	int p;
 
@@ -43,7 +43,7 @@ void dump_data(char *b, int n)
 	printf("\n");
 }
 
-void decode_data(char *b, int n)
+void decode_data(uint8_t *b, int n)
 {
 	NodeSensorList *msg;
 	int i;
@@ -229,8 +229,8 @@ int main(int argc, char *argv[])
 		}
 
 		if (parse_message)
-			decode_data((char *)recv_buffer, recv_length);
+			decode_data(recv_buffer, recv_length);
 		else
-			dump_data((char *)recv_buffer, recv_length);
+			dump_data(recv_buffer, recv_length);
 	}
 }
