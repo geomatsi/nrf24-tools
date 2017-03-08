@@ -313,6 +313,71 @@ int nrf24_dump_regs(struct rf24 *pnrf, int argc, char *argv[])
 	return 0;
 }
 
+int nrf24_scan_channels(struct rf24 *pnrf, int argc, char *argv[])
+{
+	uint8_t addr[] = {'A', 'A', 'A', 'A', 'A'};
+	uint32_t rpd[RF24_MAX_CHANNEL + 1] = { 0 };
+	int cmax = RF24_MAX_CHANNEL;
+	int cmin = 0;
+	int loops = 5;
+	int cycles = 25;
+	int ch, lps;
+
+	if ((argc > 0) && argv[0])
+		cmin = atoi(argv[0]);
+
+	if ((argc > 1) && argv[1])
+		cmax = atoi(argv[1]);
+
+	if ((argc > 2) && argv[2])
+		loops = atoi(argv[2]);
+
+	if ((argc > 3) && argv[3])
+		cycles = atoi(argv[3]);
+
+	if ((cmin < 0) || (cmin > cmax))
+		cmin = 0;
+
+	if ((cmax < cmin) || (cmax > RF24_MAX_CHANNEL))
+		cmax = RF24_MAX_CHANNEL;
+
+	if (loops <= 0)
+		loops = 5;
+
+	if (cycles <= 0)
+		cycles = 25;
+
+	for (ch = cmin; ch <= cmax; ch++)
+		printf("%02x ", ch);
+
+	printf("\n");
+
+	rf24_set_crc_mode(pnrf, RF24_CRC_NONE);
+	rf24_set_auto_ack_all(pnrf, 0x0);
+	rf24_setup_prx(pnrf, 0x0, addr);
+
+	while (cycles--) {
+		lps = loops;
+		memset(rpd, 0x0, sizeof(rpd));
+
+		while (lps--) {
+			for (ch = cmin; ch <= cmax; ch++) {
+				rf24_set_channel(pnrf, ch);
+				rf24_start_prx(pnrf);
+				if (rf24_get_carrier(pnrf) & RPD_RPD)
+					rpd[ch]++;
+			}
+		}
+
+		for (ch = cmin; ch <= cmax; ch++)
+			printf("%02x ", rpd[ch]);
+
+		printf("\n");
+	}
+
+	return 0;
+}
+
 /* */
 
 struct cmd_handler commands[] = {
@@ -335,6 +400,11 @@ struct cmd_handler commands[] = {
 		.cmd = "regs",
 		.desc = "dump specified subset of registers: regs r1,r2,r3",
 		.handler = nrf24_dump_regs,
+	},
+	{
+		.cmd = "scan",
+		.desc = "scan channels: scan [ch0 [ch1 [loops [cycles]]]]",
+		.handler = nrf24_scan_channels,
 	},
 };
 
