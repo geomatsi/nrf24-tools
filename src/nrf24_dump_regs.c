@@ -15,7 +15,7 @@
 struct cmd_handler {
 	char *cmd;
 	char *desc;
-	int (*handler)(struct rf24 *pnrf, char *arg);
+	int (*handler)(struct rf24 *pnrf, int argc, char *argv[]);
 };
 
 struct reg_handler {
@@ -245,7 +245,7 @@ struct reg_handler nrf24_regs[] = {
 
 /* */
 
-int nrf24_detect_model(struct rf24 *pnrf, char *param __attribute__((unused)))
+int nrf24_detect_model(struct rf24 *pnrf, int argc, char *argv[])
 {
 	enum rf24_data_rate rate;
 
@@ -263,7 +263,7 @@ int nrf24_detect_model(struct rf24 *pnrf, char *param __attribute__((unused)))
 	return 0;
 }
 
-int nrf24_list_all_regs(struct rf24 *pnrf __attribute__((unused)), char *param __attribute__((unused)))
+int nrf24_list_all_regs(struct rf24 *pnrf, int argc, char *argv[])
 {
 	struct reg_handler *ph;
 	int i;
@@ -276,7 +276,7 @@ int nrf24_list_all_regs(struct rf24 *pnrf __attribute__((unused)), char *param _
 	return 0;
 }
 
-int nrf24_dump_all_regs(struct rf24 *pnrf, char *param __attribute__((unused)))
+int nrf24_dump_all_regs(struct rf24 *pnrf, int argc, char *argv[])
 {
 	struct reg_handler *ph;
 	int i;
@@ -289,17 +289,17 @@ int nrf24_dump_all_regs(struct rf24 *pnrf, char *param __attribute__((unused)))
 	return 0;
 }
 
-int nrf24_dump_regs(struct rf24 *pnrf, char *param)
+int nrf24_dump_regs(struct rf24 *pnrf, int argc, char *argv[])
 {
 	struct reg_handler *ph;
 	char *name;
 	char *reg;
 	int i;
 
-	if (!param)
+	if (!argc || !argv[0])
 		return 0;
 
-	while ((reg = strsep(&param, ","))) {
+	while ((reg = strsep(&argv[0], ","))) {
 		for (i = 0; i < sizeof(nrf24_regs) / sizeof(struct reg_handler); i++) {
 			name = nrf24_regs[i].name;
 			if (0 == strncmp(reg, name, strlen(name))) {
@@ -409,7 +409,7 @@ int main(int argc, char *argv[])
 	for (i = 0; i < sizeof(commands) / sizeof(struct cmd_handler); i++) {
 		cmd = commands[i].cmd;
 		if (0 == strncmp(cmd, argv[optind], strlen(cmd))) {
-			commands[i].handler(pnrf, argv[optind + 1]);
+			commands[i].handler(pnrf, argc - optind - 1, &argv[optind + 1]);
 			break;
 		}
 	}
