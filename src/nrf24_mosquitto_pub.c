@@ -10,7 +10,8 @@
 
 #include "RF24.h"
 #include "drv.h"
-#include "proto/msg.pb-c.h"
+
+#include "proto/msg.proto.h"
 
 /* */
 

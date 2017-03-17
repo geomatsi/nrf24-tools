@@ -8,6 +8,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -pedantic")
 
 find_package(ProtobufC REQUIRED)
+set(PROTOBUF_DESC "node_msg_v2.proto" CACHE STRING "Protobuf protocol description")
+message(STATUS "Protobuf message description: ${PROTOBUF_DESC}")
 
 ## options
 
@@ -72,7 +74,7 @@ if (WITH_NRF24_DUMP_REGS)
 endif ()
 
 if (WITH_NRF24_TEST_HUB)
-	PROTOBUFC_GENERATE_C(PROTO_SRCS PROTO_HDRS proto msg.proto)
+	PROTOBUFC_GENERATE_C(PROTO_SRCS PROTO_HDRS proto ${PROTOBUF_DESC})
 	add_executable(
 		nrf24_test_hub
 		src/nrf24_test_hub.c
@@ -80,7 +82,7 @@ if (WITH_NRF24_TEST_HUB)
 endif ()
 
 if (WITH_NRF24_MOSQUITTO_PUB)
-	PROTOBUFC_GENERATE_C(PROTO_SRCS PROTO_HDRS proto msg.proto)
+	PROTOBUFC_GENERATE_C(PROTO_SRCS PROTO_HDRS proto ${PROTOBUF_DESC})
 	add_executable(
 		nrf24_mosquitto_pub
 		src/nrf24_mosquitto_pub.c
