@@ -19,6 +19,7 @@ void nrf24_test_usage(char *name)
 {
 	printf("usage: %s [-h] -d <spidev>\n", name);
 	printf("%-30s%s\n", "-h, --help", "this help message");
+	printf("%-30s%s\n", "-a, --address XX:XX:XX:XX:XX", "pipe 0 PRX address");
 	printf("%-30s%s\n", "-d, --device <spidev>", "spidev for nRF24L01, default is '/dev/spidev0.0");
 	printf("%-30s%s\n", "-c, --channel <num>", "set channel number: 0 .. 127");
 	printf("%-30s%s\n", "-r, --rate <rate>", "set data rate: 0(1M), 1(2M), 2(250K)");
@@ -45,15 +46,18 @@ void dump_data(uint8_t *b, int n)
 
 int main(int argc, char *argv[])
 {
-	uint8_t addr[] = {'E', 'F', 'C', 'L', 'I'};
-
+	uint8_t addr[] = {0xE1, 0xE1, 0xE1, 0xE1, 0xE1};
 	bool dynamic_payload = false;
 	enum rf24_rx_status ret;
 	uint8_t recv_buffer[32];
 	int recv_length = 32;
+	unsigned int digit;
 	struct rf24 *pnrf;
+	char *sa;
+	char *sb;
 	int pipe;
 	int tmp;
+	int i = 0;
 
 	/* use sane defaults */
 	int channel = 76;
@@ -66,8 +70,9 @@ int main(int argc, char *argv[])
 	char *spidev_name = "/dev/spidev0.0";
 
 	int opt;
-	const char opts[] = "e:p:r:c:d:h";
+	const char opts[] = "a:e:p:r:c:d:h";
 	const struct option longopts[] = {
+		{"address", required_argument, NULL, 'a'},
 		{"device", required_argument, NULL, 'd'},
 		{"channel", required_argument, NULL, 'c'},
 		{"rate", required_argument, NULL, 'r'},
@@ -81,6 +86,24 @@ int main(int argc, char *argv[])
 
 	while (opt = getopt_long(argc, argv, opts, longopts, &opt), opt > 0) {
 		switch (opt) {
+			case 'a':
+				sa = strdup(optarg);
+				while ((sb = strsep(&sa, ":")) && (i < 5)) {
+					tmp = sscanf(sb, "%x", &digit);
+					if (digit > 0xff) {
+						printf("ERR: invalid pipe address <%s>\n", optarg);
+						exit(-1);
+					}
+
+					addr[i++] = digit;
+				}
+
+				if (i != 5) {
+					printf("ERR: invalid pipe address length <%s>\n", optarg);
+					exit(-1);
+				}
+
+				break;
 			case 'd':
 				spidev_name = strdup(optarg);
 				break;
@@ -184,6 +207,8 @@ int main(int argc, char *argv[])
 	rf24_setup_prx(pnrf, 0x0 /* pipe number */, addr);
 	rf24_start_prx(pnrf);
 	rf24_print_status(pnrf);
+
+	printf("PRX addr %x:%x:%x:%x:%x\n", addr[0], addr[1], addr[2], addr[3], addr[4]);
 
 	/* */
 
