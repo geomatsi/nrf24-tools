@@ -40,6 +40,7 @@ void nrf24_test_usage(char *name)
 {
 	printf("usage: %s [-h] -d <spidev>\n", name);
 	printf("%-30s%s\n", "-h, --help", "this help message");
+	printf("%-30s%s\n", "-a, --address <addrs>", "PRX pipes addresses in the form XX:XX:XX:XX:XX[,XX:XX:XX:XX:XX[,XX[,XX[,XX[,XX]]]]]");
 	printf("%-30s%s\n", "-d, --device <spidev>", "spidev for nRF24L01, default is '/dev/spidev0.0");
 	printf("%-30s%s\n", "-c, --channel <num>", "set channel number: 0 .. 127");
 	printf("%-30s%s\n", "-r, --rate <rate>", "set data rate: 0(1M), 1(2M), 2(250K)");
@@ -99,8 +100,17 @@ void publish_data(struct mosquitto *m, uint8_t *b, int n)
 
 int main(int argc, char *argv[])
 {
-	uint8_t addr0[] = {'E', 'F', 'C', 'L', 'I'};
-	uint8_t addr1[] = {'E', 'F', 'S', 'N', '1'};
+	uint8_t pipe_addr[6][5] = {
+		{ 0xE1, 0xE1, 0xE1, 0xE1, 0xE1 },
+		{ 0x00, 0x00, 0x00, 0x00, 0x00 },
+		{ 0x00, 0x00, 0x00, 0x00, 0x00 },
+		{ 0x00, 0x00, 0x00, 0x00, 0x00 },
+		{ 0x00, 0x00, 0x00, 0x00, 0x00 },
+		{ 0x00, 0x00, 0x00, 0x00, 0x00 },
+	};
+
+	/* by default only the first pipe is enabled */
+	uint8_t pipe_en[6] = {1, 0, 0, 0, 0, 0};
 
 	bool dynamic_payload = false;
 	bool publish_message = false;
@@ -111,6 +121,10 @@ int main(int argc, char *argv[])
 	enum rf24_rx_status ret;
 	struct rf24 *pnrf;
 	int pipe;
+
+	char *sa, *sb, *sc, *sd;
+	unsigned int digit;
+	int i, j, tmp;
 
 	/* use sane nRF24 defaults */
 
@@ -131,8 +145,9 @@ int main(int argc, char *argv[])
 	char *spidev_name = "/dev/spidev0.0";
 
 	int opt;
-	const char opts[] = "e:p:r:c:d:h";
+	const char opts[] = "a:e:p:r:c:d:h";
 	const struct option longopts[] = {
+		{"address", required_argument, NULL, 'a'},
 		{"device", required_argument, NULL, 'd'},
 		{"channel", required_argument, NULL, 'c'},
 		{"rate", required_argument, NULL, 'r'},
@@ -149,6 +164,43 @@ int main(int argc, char *argv[])
 		switch (opt) {
 			case 'd':
 				spidev_name = strdup(optarg);
+				break;
+			case 'a':
+				sa = strdup(optarg);
+				i = 0;
+
+				while ((sb = strsep(&sa, ",")) && (i < 6)) {
+					sc = strdup(sb);
+					pipe_en[i] = 1;
+					j = 0;
+
+					while ((sd = strsep(&sc, ":")) && (j < 5)) {
+						tmp = sscanf(sd, "%x", &digit);
+						if (tmp != 1) {
+							printf("ERR: invalid pipe%d address entry <%s>\n",
+									i, sd);
+							exit(-1);
+						}
+
+						if (digit > 0xff) {
+							printf("ERR: invalid pipe%d address <%s>\n",
+									i, sb);
+							exit(-1);
+						}
+
+						pipe_addr[i][j] = digit;
+						j++;
+					}
+
+					/* data pipes 1-5 share 4 most significant bytes */
+					if (((i < 2) && (j != 5)) || ((i >= 2) && (j != 1))) {
+						printf("ERR: invalid pipe%d address length <%s>\n",
+							i, sb);
+						exit(-1);
+					}
+
+					i++;
+				}
 				break;
 			case 'c':
 				channel = atoi(optarg);
@@ -249,8 +301,20 @@ int main(int argc, char *argv[])
 	rf24_set_crc_mode(pnrf, crc);
 	rf24_set_pa_level(pnrf, power);
 
-	rf24_setup_prx(pnrf, 0x0 /* pipe number */, addr0);
-	rf24_setup_prx(pnrf, 0x1 /* pipe number */, addr1);
+	for (i = 0; i < 6; i++) {
+		if (pipe_en[i]) {
+			/* for pipes 2-5 only last addr byte is passed */
+			rf24_setup_prx(pnrf, i, pipe_addr[i]);
+
+			/* data pipes 1-5 share 4 most significant bytes */
+			printf("enable pipe%d with address: %02x:%02x:%02x:%02x:%02x\n", i,
+				pipe_addr[(i < 2) ? i : 1][0],
+				pipe_addr[(i < 2) ? i : 1][1],
+				pipe_addr[(i < 2) ? i : 1][2],
+				pipe_addr[(i < 2) ? i : 1][3],
+				pipe_addr[i][(i < 2) ? 4 : 0]);
+		}
+	}
 
 	rf24_start_prx(pnrf);
 	rf24_print_status(pnrf);
