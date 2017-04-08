@@ -19,6 +19,7 @@
 /* */
 
 int spi_open(char *spidev);
+int spi_init(uint32_t speed, uint8_t mode, uint8_t bits, uint8_t lsb);
 int spi_info(void);
 void spi_close(void);
 
