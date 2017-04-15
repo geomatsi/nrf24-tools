@@ -445,11 +445,6 @@ int main(int argc, char *argv[])
 
 	/* parse command line */
 
-	if (argc <= 1) {
-		nrf24_dump_usage(argv[0]);
-		exit(0);
-	}
-
 	while (opt = getopt_long(argc, argv, opts, longopts, &opt), opt > 0) {
 		switch (opt) {
 			case 'd':
@@ -460,6 +455,11 @@ int main(int argc, char *argv[])
 				nrf24_dump_usage(argv[0]);
 				exit(0);
 		}
+	}
+
+	if (argc - optind + 1 <= 1) {
+		nrf24_dump_usage(argv[0]);
+		exit(0);
 	}
 
 	/* setup nRF24L01 */
