@@ -9,8 +9,8 @@
  *   - SPI h/w CSN line is used, no need to toggle GPIO line
  */
 
-#define ORANGE_NRF24_CE		2
-#define ORANGE_NRF24_CE_NAME	"gpio2"
+#define ORANGE_NRF24_CE		10
+#define ORANGE_NRF24_CE_NAME	"gpio10"
 
 #define ORANGE_NRF24_IRQ	18
 #define ORANGE_NRF24_IRQ_NAME	"gpio18"
