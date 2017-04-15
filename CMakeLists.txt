@@ -27,6 +27,7 @@ file(GLOB_RECURSE PCDUINO_UPSTREAM_SRCS ${PROJECT_SOURCE_DIR}/drv/pcduino-upstre
 file(GLOB_RECURSE PCDUINO_LEGACY_SRCS ${PROJECT_SOURCE_DIR}/drv/pcduino-legacy/*.c)
 file(GLOB_RECURSE BONE_SRCS ${PROJECT_SOURCE_DIR}/drv/bone/*.c)
 file(GLOB_RECURSE ORANGE_PI_ONE_SRCS ${PROJECT_SOURCE_DIR}/drv/orange-pi-one/*.c)
+file(GLOB_RECURSE ORANGE_PI_ZERO_SRCS ${PROJECT_SOURCE_DIR}/drv/orange-pi-zero/*.c)
 
 set(NRF24_CONN "UM232H" CACHE STRING "nRF24x connector chosen by the user at CMake configure time")
 
@@ -55,6 +56,12 @@ endif ()
 
 if ( NRF24_CONN STREQUAL "ORANGE_PI_ONE" )
 	set (CONN_SRCS ${ORANGE_PI_ONE_SRCS}
+		common/gpio-sysfs.c common/spi-spidev.c common/delay.c)
+	message(STATUS "nRF24 connector: ${NRF24_CONN} (${CONN_SRCS})")
+endif ()
+
+if ( NRF24_CONN STREQUAL "ORANGE_PI_ZERO" )
+	set (CONN_SRCS ${ORANGE_PI_ZERO_SRCS}
 		common/gpio-sysfs.c common/spi-spidev.c common/delay.c)
 	message(STATUS "nRF24 connector: ${NRF24_CONN} (${CONN_SRCS})")
 endif ()
@@ -162,7 +169,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 ## set libraries paths
 
 if (WITH_NRF24_TEST_PTX)
-	if ( NRF24_CONN STREQUAL "ORANGE_PI_ONE" )
+	if ( NRF24_CONN MATCHES "ORANGE_PI" )
 		target_link_libraries(nrf24_test_ptx ${NRF24_MB_LIBRARY})
 	else ()
 		target_link_libraries(nrf24_test_ptx ${NRF24_LIBRARY})
@@ -174,7 +181,7 @@ if (WITH_NRF24_TEST_PTX)
 endif ()
 
 if (WITH_NRF24_TEST_PRX)
-	if ( NRF24_CONN STREQUAL "ORANGE_PI_ONE" )
+	if ( NRF24_CONN MATCHES "ORANGE_PI" )
 		target_link_libraries(nrf24_test_prx ${NRF24_MB_LIBRARY})
 	else ()
 		target_link_libraries(nrf24_test_prx ${NRF24_LIBRARY})
@@ -186,7 +193,7 @@ if (WITH_NRF24_TEST_PRX)
 endif ()
 
 if (WITH_NRF24_DUMP_REGS)
-	if ( NRF24_CONN STREQUAL "ORANGE_PI_ONE" )
+	if ( NRF24_CONN MATCHES "ORANGE_PI" )
 		target_link_libraries(nrf24_dump_regs ${NRF24_MB_LIBRARY})
 	else ()
 		target_link_libraries(nrf24_dump_regs ${NRF24_LIBRARY})
@@ -200,7 +207,7 @@ endif ()
 if (WITH_NRF24_TEST_HUB)
 	target_link_libraries(nrf24_test_hub ${PROTOBUFC_LIBRARIES})
 
-	if ( NRF24_CONN STREQUAL "ORANGE_PI_ONE" )
+	if ( NRF24_CONN MATCHES "ORANGE_PI" )
 		target_link_libraries(nrf24_test_hub ${NRF24_MB_LIBRARY})
 	else ()
 		target_link_libraries(nrf24_test_hub ${NRF24_LIBRARY})
@@ -215,7 +222,7 @@ if (WITH_NRF24_MOSQUITTO_PUB)
 	target_link_libraries(nrf24_mosquitto_pub ${MOSQUITTO_LIBRARY})
 	target_link_libraries(nrf24_mosquitto_pub ${PROTOBUFC_LIBRARIES})
 
-	if ( NRF24_CONN STREQUAL "ORANGE_PI_ONE" )
+	if ( NRF24_CONN MATCHES "ORANGE_PI" )
 		target_link_libraries(nrf24_mosquitto_pub ${NRF24_MB_LIBRARY})
 	else ()
 		target_link_libraries(nrf24_mosquitto_pub ${NRF24_LIBRARY})
