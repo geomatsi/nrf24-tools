@@ -1,3 +1,6 @@
+#ifndef __CFG_H__
+#define __CFG_H__
+
 #include <RF24.h>
 
 #define MAX_CONFIG_SIZE	4096
@@ -16,6 +19,47 @@ struct radio_conf {
 	uint8_t pwr;
 };
 
-void init_radio_conf(struct radio_conf *c);
-int validate_radio_conf(const struct radio_conf *c);
+static inline void init_radio_conf(struct radio_conf *c)
+{
+	if (!c)
+		return;
+
+	memset(c, 0x0, sizeof(*c));
+
+	c->channel = 10;
+	c->rate = RF24_RATE_1M;
+	c->crc = RF24_CRC_16_BITS;
+	c->pwr = RF24_PA_MAX;
+}
+
+static inline int validate_radio_conf(const struct radio_conf *c)
+{
+	if (c->channel > RF24_MAX_CHANNEL)
+		return -1;
+
+	if ((c->rate < RF24_RATE_1M) || (c->rate > RF24_RATE_250K))
+		return -1;
+
+	if ((c->crc < RF24_CRC_NONE) || (c->crc > RF24_CRC_16_BITS))
+		return -1;
+
+	if ((c->pwr < RF24_PA_MIN) || (c->pwr > RF24_PA_MAX))
+		return -1;
+
+	return 0;
+}
+
+#ifdef WITH_JSON_CONFIG
+
 int read_radio_conf(struct radio_conf *c, const char *path);
+
+#else
+
+static inline int read_radio_conf(struct radio_conf *c, const char *path)
+{
+	return 0;
+}
+
+#endif
+
+#endif /* __CFG_H__ */

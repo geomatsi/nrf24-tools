@@ -17,8 +17,17 @@ option (WITH_NRF24_TEST_PTX "Build nRF24L01 PTX test tool" ON)
 option (WITH_NRF24_TEST_PRX "Build nRF24L01 PRX test tool" ON)
 option (WITH_NRF24_TEST_HUB "Build nRF24L01 PRX MultiCeiver test tool" ON)
 option (WITH_NRF24_DUMP_REGS "Build nRF24L01 register dump tool" ON)
-option (WITH_NRF24_MOSQUITTO_PUB "Build nRF24L01 mosquitto publisher" OFF)
+option (WITH_NRF24_MOSQUITTO_PUB "Build nRF24L01 mosquitto publisher" ON)
 option (WITH_SERIAL_MOSQUITTO_TEST "Build serial port mosquitto test publisher" OFF)
+option (WITH_JSON_CONFIG "USE_JSON_CONFIG" ON)
+
+##
+
+if (WITH_JSON_CONFIG)
+	set (CONF_SRCS common/config.c)
+	add_definitions(-DWITH_JSON_CONFIG)
+	message(STATUS "enable JSON config")
+endif ()
 
 ## select nRF24 connector: SPIDEV/UM232H/...
 
@@ -93,7 +102,7 @@ if (WITH_NRF24_MOSQUITTO_PUB)
 	add_executable(
 		nrf24_mosquitto_pub
 		src/nrf24_mosquitto_pub.c
-		${CONN_SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
+		${CONN_SRCS} ${PROTO_SRCS} ${PROTO_HDRS} ${CONF_SRCS})
 endif ()
 
 if (WITH_SERIAL_MOSQUITTO_TEST)
@@ -117,6 +126,11 @@ PATHS /usr/include
 FIND_PATH(FTDI_INCLUDE_DIR
 NAMES ftdi.h
 PATHS /usr/include
+)
+
+FIND_PATH(JSON_INCLUDE_DIR
+NAMES json.h
+PATHS /usr/include/json-c
 )
 
 ## find libraries
@@ -143,6 +157,11 @@ PATHS /usr/lib /usr/local/lib
 
 FIND_LIBRARY(FTDI_LIBRARY
 NAMES ftdi
+PATHS /usr/lib /usr/lib/x86_64-linux-gnu
+)
+
+FIND_LIBRARY(JSON_LIBRARY
+NAMES json-c
 PATHS /usr/lib /usr/lib/x86_64-linux-gnu
 )
 
@@ -226,6 +245,10 @@ if (WITH_NRF24_MOSQUITTO_PUB)
 		target_link_libraries(nrf24_mosquitto_pub ${NRF24_MB_LIBRARY})
 	else ()
 		target_link_libraries(nrf24_mosquitto_pub ${NRF24_LIBRARY})
+	endif ()
+
+	if (WITH_JSON_CONFIG)
+		target_link_libraries(nrf24_mosquitto_pub ${JSON_LIBRARY})
 	endif ()
 
 	if ( NRF24_CONN STREQUAL "UM232H" )

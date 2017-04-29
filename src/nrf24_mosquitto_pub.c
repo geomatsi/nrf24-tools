@@ -8,6 +8,7 @@
 
 #include <mosquitto.h>
 
+#include "config.h"
 #include "RF24.h"
 #include "drv.h"
 
@@ -40,6 +41,7 @@ void nrf24_test_usage(char *name)
 {
 	printf("usage: %s [-h] -d <spidev>\n", name);
 	printf("%-30s%s\n", "-h, --help", "this help message");
+	printf("%-30s%s\n", "-C, --config </path/to/config/file>", "config file");
 	printf("%-30s%s\n", "-a, --address <addrs>", "PRX pipes addresses in the form XX:XX:XX:XX:XX[,XX:XX:XX:XX:XX[,XX[,XX[,XX[,XX]]]]]");
 	printf("%-30s%s\n", "-d, --device <spidev>", "spidev for nRF24L01, default is '/dev/spidev0.0");
 	printf("%-30s%s\n", "-c, --channel <num>", "set channel number: 0 .. 127");
@@ -125,13 +127,10 @@ int main(int argc, char *argv[])
 	char *sa, *sb, *sc, *sd;
 	unsigned int digit;
 	int i, j, tmp;
+	int rc;
 
-	/* use sane nRF24 defaults */
-
-	int channel = 76;
-	int rate = RF24_RATE_1M;
-	int crc = RF24_CRC_16_BITS;
-	int power = RF24_PA_MAX;
+	struct radio_conf rconf = {0};
+	char *config_name = NULL;
 
 	char *host = "localhost";
 	int port = 1883;
@@ -140,13 +139,14 @@ int main(int argc, char *argv[])
 	struct mosquitto *mqtt = NULL;
 	char *mqtt_id = "nrf24hub";
 
-	/* command line options */
-
 	char *spidev_name = "/dev/spidev0.0";
 
+	/* command line options */
+
 	int opt;
-	const char opts[] = "a:e:p:r:c:d:h";
+	const char opts[] = "a:e:p:r:c:d:C:h";
 	const struct option longopts[] = {
+		{"config", required_argument, NULL, 'C'},
 		{"address", required_argument, NULL, 'a'},
 		{"device", required_argument, NULL, 'd'},
 		{"channel", required_argument, NULL, 'c'},
@@ -160,94 +160,100 @@ int main(int argc, char *argv[])
 		{NULL,}
 	};
 
+	/* use sane radio defaults */
+	init_radio_conf(&rconf);
+
 	while (opt = getopt_long(argc, argv, opts, longopts, &opt), opt > 0) {
 		switch (opt) {
-			case 'd':
-				spidev_name = strdup(optarg);
-				break;
-			case 'a':
-				sa = strdup(optarg);
-				i = 0;
+		case 'd':
+			spidev_name = strdup(optarg);
+			break;
+		case 'C':
+			config_name = strdup(optarg);
+			rc = read_radio_conf(&rconf, config_name);
+			if (rc < 0) {
+				printf("ERR: couldn't read config file\n");
+				exit(-1);
+			}
+			break;
+		case 'a':
+			sa = strdup(optarg);
+			i = 0;
 
-				while ((sb = strsep(&sa, ",")) && (i < 6)) {
-					sc = strdup(sb);
-					pipe_en[i] = 1;
-					j = 0;
+			while ((sb = strsep(&sa, ",")) && (i < 6)) {
+				sc = strdup(sb);
+				pipe_en[i] = 1;
+				j = 0;
 
-					while ((sd = strsep(&sc, ":")) && (j < 5)) {
-						tmp = sscanf(sd, "%x", &digit);
-						if (tmp != 1) {
-							printf("ERR: invalid pipe%d address entry <%s>\n",
-									i, sd);
-							exit(-1);
-						}
-
-						if (digit > 0xff) {
-							printf("ERR: invalid pipe%d address <%s>\n",
-									i, sb);
-							exit(-1);
-						}
-
-						pipe_addr[i][j] = digit;
-						j++;
-					}
-
-					/* data pipes 1-5 share 4 most significant bytes */
-					if (((i < 2) && (j != 5)) || ((i >= 2) && (j != 1))) {
-						printf("ERR: invalid pipe%d address length <%s>\n",
-							i, sb);
+				while ((sd = strsep(&sc, ":")) && (j < 5)) {
+					tmp = sscanf(sd, "%x", &digit);
+					if (tmp != 1) {
+						printf("ERR: invalid pipe%d address entry <%s>\n",
+								i, sd);
 						exit(-1);
 					}
 
-					i++;
+					if (digit > 0xff) {
+						printf("ERR: invalid pipe%d address <%s>\n",
+								i, sb);
+						exit(-1);
+					}
+
+					pipe_addr[i][j] = digit;
+					j++;
 				}
-				break;
-			case 'c':
-				channel = atoi(optarg);
-				if ((channel < 0) || (channel > 127)) {
-					printf("ERR: invalid channel %d\n", channel);
+
+				/* data pipes 1-5 share 4 most significant bytes */
+				if (((i < 2) && (j != 5)) || ((i >= 2) && (j != 1))) {
+					printf("ERR: invalid pipe%d address length <%s>\n",
+						i, sb);
 					exit(-1);
 				}
-				break;
-			case 'r':
-				rate = atoi(optarg);
-				if ((rate < 0) || (rate > 2)) {
-					printf("ERR: invalid rate %d\n", rate);
-					exit(-1);
-				}
-				break;
-			case 'e':
-				crc = atoi(optarg);
-				if ((crc < 0) || (crc > 2)) {
-					printf("ERR: invalid CRC mode %d\n", crc);
-					exit(-1);
-				}
-				break;
-			case 'p':
-				power = atoi(optarg);
-				if ((power < 0) || (power > 3)) {
-					printf("ERR: invalid power %d\n", power);
-					exit(-1);
-				}
-				break;
-			case '0':
-				dynamic_payload = true;
-				break;
-			case '1':
-				recv_length = atoi(optarg);
-				if ((recv_length < 1) || (recv_length > 32)) {
-					printf("ERR: invalid static payload length %d\n", recv_length);
-					exit(-1);
-				}
-				break;
-			case '2':
-				publish_message = true;
-				break;
-			case 'h':
-			default:
-				nrf24_test_usage(argv[0]);
-				exit(0);
+
+				i++;
+			}
+		break;
+		case 'c':
+			rconf.channel = atoi(optarg);
+			break;
+		case 'r':
+			rconf.rate = atoi(optarg);
+			break;
+		case 'e':
+			rconf.crc = atoi(optarg);
+			break;
+		case 'p':
+			rconf.pwr = atoi(optarg);
+			break;
+		case '0':
+			dynamic_payload = true;
+			break;
+		case '1':
+			recv_length = atoi(optarg);
+			if ((recv_length < 1) || (recv_length > 32)) {
+				printf("ERR: invalid static payload length %d\n", recv_length);
+				exit(-1);
+			}
+			break;
+		case '2':
+			publish_message = true;
+			break;
+		case 'h':
+		default:
+			nrf24_test_usage(argv[0]);
+			exit(0);
 		}
+	}
+
+	/* validate radio settings */
+
+	printf("XXXX: c[%u] r[%u] e[%u] p[%u]\n",
+		rconf.channel, rconf.rate, rconf.crc, rconf.pwr);
+
+	rc = validate_radio_conf(&rconf);
+	if (rc < 0) {
+		printf("ERR: invalid radio config\n");
+		exit(-1);
 	}
 
 	/* setup mosquitto */
@@ -296,10 +302,10 @@ int main(int argc, char *argv[])
 	else
 		rf24_set_payload_size(pnrf, recv_length);
 
-	rf24_set_channel(pnrf, channel);
-	rf24_set_data_rate(pnrf, rate);
-	rf24_set_crc_mode(pnrf, crc);
-	rf24_set_pa_level(pnrf, power);
+	rf24_set_channel(pnrf, rconf.channel);
+	rf24_set_data_rate(pnrf, rconf.rate);
+	rf24_set_crc_mode(pnrf, rconf.crc);
+	rf24_set_pa_level(pnrf, rconf.pwr);
 
 	for (i = 0; i < 6; i++) {
 		if (pipe_en[i]) {
