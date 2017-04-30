@@ -57,6 +57,9 @@ int read_radio_conf(struct radio_conf *c, const char *path)
 		if (type != json_type_int)
 			continue;
 
+		if (!strcmp(iter.key, RADIO_TAG_LEN))
+			c->payload = json_object_get_int(iter.val);
+
 		if (!strcmp(iter.key, RADIO_TAG_CHAN))
 			c->channel = json_object_get_int(iter.val);
 

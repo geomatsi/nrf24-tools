@@ -7,17 +7,24 @@
 
 #define RADIO_TAG	"radio"
 
+#define RADIO_TAG_LEN	"payload"
 #define RADIO_TAG_CHAN	"channel"
 #define RADIO_TAG_RATE	"rate"
 #define RADIO_TAG_CRC	"crc"
 #define RADIO_TAG_PWR	"pwr"
 
 struct radio_conf {
+	uint8_t payload;
 	uint8_t channel;
 	uint8_t rate;
 	uint8_t crc;
 	uint8_t pwr;
 };
+
+static inline int payload_is_dynamic(struct radio_conf *c)
+{
+	return !!(c->payload);
+}
 
 static inline void init_radio_conf(struct radio_conf *c)
 {
@@ -26,6 +33,7 @@ static inline void init_radio_conf(struct radio_conf *c)
 
 	memset(c, 0x0, sizeof(*c));
 
+	c->payload = 32;
 	c->channel = 10;
 	c->rate = RF24_RATE_1M;
 	c->crc = RF24_CRC_16_BITS;
@@ -34,6 +42,9 @@ static inline void init_radio_conf(struct radio_conf *c)
 
 static inline int validate_radio_conf(const struct radio_conf *c)
 {
+	if ((c->payload < 0) || (c->payload > 32))
+		return -1;
+
 	if (c->channel > RF24_MAX_CHANNEL)
 		return -1;
 

@@ -48,8 +48,7 @@ void nrf24_test_usage(char *name)
 	printf("%-30s%s\n", "-r, --rate <rate>", "set data rate: 0(1M), 1(2M), 2(250K)");
 	printf("%-30s%s\n", "-e, --crc <mode>", "set CRC encoding scheme: 0(none), 1 (8 bits), 2(16 bits)");
 	printf("%-30s%s\n", "-p, --power <level>", "set TX output power: 0(-18dBm), 1(-12dBm), 2(-6dBm), 3(0dBm)");
-	printf("%-30s%s\n", "--dynamic-payload", "enable dynamic payload support");
-	printf("%-30s%s\n", "--payload-length <length>", "set static payload length to 0..32 bytes (default value is 32)");
+	printf("%-30s%s\n", "--payload-length <length>", "0 - dynamic payload, 1 .. 32 - static payload length");
 	printf("%-30s%s\n", "--publish-message", "publish messages to MQTT broker");
 }
 
@@ -114,11 +113,10 @@ int main(int argc, char *argv[])
 	/* by default only the first pipe is enabled */
 	uint8_t pipe_en[6] = {1, 0, 0, 0, 0, 0};
 
-	bool dynamic_payload = false;
 	bool publish_message = false;
 
 	uint8_t recv_buffer[32];
-	int recv_length = 32;
+	int recv_length;
 
 	enum rf24_rx_status ret;
 	struct rf24 *pnrf;
@@ -153,7 +151,6 @@ int main(int argc, char *argv[])
 		{"rate", required_argument, NULL, 'r'},
 		{"crc", required_argument, NULL, 'e'},
 		{"power", required_argument, NULL, 'p'},
-		{"dynamic-payload", no_argument, NULL, '0'},
 		{"payload-length", required_argument, NULL, '1'},
 		{"publish-message", no_argument, NULL, '2'},
 		{"help", optional_argument, NULL, 'h'},
@@ -225,15 +222,8 @@ int main(int argc, char *argv[])
 		case 'p':
 			rconf.pwr = atoi(optarg);
 			break;
-		case '0':
-			dynamic_payload = true;
-			break;
 		case '1':
-			recv_length = atoi(optarg);
-			if ((recv_length < 1) || (recv_length > 32)) {
-				printf("ERR: invalid static payload length %d\n", recv_length);
-				exit(-1);
-			}
+			rconf.payload = atoi(optarg);
 			break;
 		case '2':
 			publish_message = true;
@@ -247,8 +237,8 @@ int main(int argc, char *argv[])
 
 	/* validate radio settings */
 
-	printf("XXXX: c[%u] r[%u] e[%u] p[%u]\n",
-		rconf.channel, rconf.rate, rconf.crc, rconf.pwr);
+	printf("XXXX: l[%u] c[%u] r[%u] e[%u] p[%u]\n",
+		rconf.payload, rconf.channel, rconf.rate, rconf.crc, rconf.pwr);
 
 	rc = validate_radio_conf(&rconf);
 	if (rc < 0) {
@@ -297,10 +287,10 @@ int main(int argc, char *argv[])
 
 	/* */
 
-	if (dynamic_payload)
+	if (payload_is_dynamic(&rconf))
 		rf24_enable_dyn_payload(pnrf);
 	else
-		rf24_set_payload_size(pnrf, recv_length);
+		rf24_set_payload_size(pnrf, rconf.payload);
 
 	rf24_set_channel(pnrf, rconf.channel);
 	rf24_set_data_rate(pnrf, rconf.rate);
@@ -343,13 +333,15 @@ int main(int argc, char *argv[])
 		printf("INFO: data ready in pipe 0x%02x\n", pipe);
 		memset(recv_buffer, 0x0, sizeof(recv_buffer));
 
-		if (dynamic_payload) {
+		if (payload_is_dynamic(&rconf)) {
 			recv_length = (int)rf24_get_dyn_payload_size(pnrf);
 			if (recv_length == 0xff) {
 				printf("WARN: failed to get dynamic payload length\n");
 				rf24_flush_rx(pnrf);
 				continue;
 			}
+		} else {
+			recv_length = rconf.payload;
 		}
 
 		ret = rf24_recv(pnrf, recv_buffer, recv_length);
