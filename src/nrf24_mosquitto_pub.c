@@ -127,6 +127,7 @@ int main(int argc, char *argv[])
 	int i, j, tmp;
 	int rc;
 
+	struct plat_conf pconf = {0};
 	struct radio_conf rconf = {0};
 	char *config_name = NULL;
 
@@ -136,8 +137,6 @@ int main(int argc, char *argv[])
 	bool clean_session = true;
 	struct mosquitto *mqtt = NULL;
 	char *mqtt_id = "nrf24hub";
-
-	char *spidev_name = "/dev/spidev0.0";
 
 	/* command line options */
 
@@ -157,17 +156,24 @@ int main(int argc, char *argv[])
 		{NULL,}
 	};
 
-	/* use sane radio defaults */
+	/* use sane config defaults */
 	init_radio_conf(&rconf);
+	init_plat_conf(&pconf);
 
 	while (opt = getopt_long(argc, argv, opts, longopts, &opt), opt > 0) {
 		switch (opt) {
 		case 'd':
-			spidev_name = strdup(optarg);
+			pconf.spidev = strdup(optarg);
 			break;
 		case 'C':
 			config_name = strdup(optarg);
 			rc = read_radio_conf(&rconf, config_name);
+			if (rc < 0) {
+				printf("ERR: couldn't read config file\n");
+				exit(-1);
+			}
+
+			rc = read_plat_conf(&pconf, config_name);
 			if (rc < 0) {
 				printf("ERR: couldn't read config file\n");
 				exit(-1);
@@ -246,6 +252,8 @@ int main(int argc, char *argv[])
 		exit(-1);
 	}
 
+	printf("YYYY: plat[%s] spidev[%s]\n", pconf.name, pconf.spidev);
+
 	/* setup mosquitto */
 
 	mosquitto_lib_init();
@@ -275,7 +283,7 @@ int main(int argc, char *argv[])
 	pnrf = &nrf;
 	memset(pnrf, 0x0, sizeof(*pnrf));
 
-	if (0 > nrf24_driver_setup(pnrf, spidev_name)) {
+	if (0 > nrf24_driver_setup(pnrf, pconf.spidev)) {
 		printf("ERR: can't setup gpio\n");
 		exit(-1);
 	}

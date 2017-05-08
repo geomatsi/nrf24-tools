@@ -13,12 +13,22 @@
 #define RADIO_TAG_CRC	"crc"
 #define RADIO_TAG_PWR	"pwr"
 
+#define PLAT_TAG	"platform"
+
+#define PLAT_TAG_NAME	"name"
+#define PLAT_TAG_SPIDEV	"spidev"
+
 struct radio_conf {
 	uint8_t payload;
 	uint8_t channel;
 	uint8_t rate;
 	uint8_t crc;
 	uint8_t pwr;
+};
+
+struct plat_conf {
+	char *name;
+	char *spidev;
 };
 
 static inline int payload_is_dynamic(struct radio_conf *c)
@@ -38,6 +48,17 @@ static inline void init_radio_conf(struct radio_conf *c)
 	c->rate = RF24_RATE_1M;
 	c->crc = RF24_CRC_16_BITS;
 	c->pwr = RF24_PA_MAX;
+}
+
+static inline void init_plat_conf(struct plat_conf *c)
+{
+	if (!c)
+		return;
+
+	memset(c, 0x0, sizeof(*c));
+
+	c->name = strdup("default");
+	c->spidev = strdup("/dev/spidev0.0");
 }
 
 static inline int validate_radio_conf(const struct radio_conf *c)
@@ -63,10 +84,16 @@ static inline int validate_radio_conf(const struct radio_conf *c)
 #ifdef WITH_JSON_CONFIG
 
 int read_radio_conf(struct radio_conf *c, const char *path);
+int read_plat_conf(struct plat_conf *c, const char *path);
 
 #else
 
 static inline int read_radio_conf(struct radio_conf *c, const char *path)
+{
+	return 0;
+}
+
+static inline int read_plat_conf(struct plat_conf *c, const char *path)
 {
 	return 0;
 }

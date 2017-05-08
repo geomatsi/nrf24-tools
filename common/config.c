@@ -76,4 +76,66 @@ int read_radio_conf(struct radio_conf *c, const char *path)
 	return 0;
 }
 
+int read_plat_conf(struct plat_conf *c, const char *path)
+{
+	char s[MAX_CONFIG_SIZE] = {0};
+	struct json_object_iter iter;
+	enum json_type type;
+	json_object *jobj;
+	json_object *pobj;
+	FILE *fp;
+	int ret;
+
+	if (!c) {
+		printf("invalid pconf pointer\n");
+		return -1;
+	}
+
+	if (!path) {
+		printf("%s: invalid config path\n", path);
+		return -1;
+	}
+
+	fp = fopen(path, "r");
+	if (!fp) {
+		perror("couldn't open config");
+		return -1;
+	}
+
+	ret = fread(s, 1, MAX_CONFIG_SIZE - 1, fp);
+	if (!ret) {
+		perror("couldn't read config");
+		return -1;
+	}
+
+	printf("json string:\n%s\n", s);
+
+	jobj = json_tokener_parse(s);
+	if (!jobj) {
+		printf("failed to parse config\n");
+		return -1;
+	}
+
+	if (!json_object_object_get_ex(jobj, PLAT_TAG, &pobj)) {
+		printf("failed to get json object %s\n", PLAT_TAG);
+		return -1;
+	}
+
+	json_object_object_foreachC(pobj, iter) {
+		printf("key[%s]\n", iter.key);
+
+		type = json_object_get_type(iter.val);
+		if (type != json_type_int)
+			continue;
+
+		if (!strcmp(iter.key, PLAT_TAG_NAME))
+			c->name = strdup(json_object_get_string(iter.val));
+
+		if (!strcmp(iter.key, PLAT_TAG_SPIDEV))
+			c->spidev = strdup(json_object_get_string(iter.val));
+	}
+
+	return 0;
+}
+
 
