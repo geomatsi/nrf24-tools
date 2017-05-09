@@ -56,8 +56,8 @@ static inline void cfg_radio_init(struct cfg_radio *c)
 
 	c->payload = 32;
 	c->channel = 10;
-	c->rate = RF24_RATE_1M;
-	c->crc = RF24_CRC_16_BITS;
+	c->rate = RF24_RATE_MIN;
+	c->crc = RF24_CRC_MAX;
 	c->pwr = RF24_PA_MAX;
 }
 
@@ -69,10 +69,10 @@ static inline int cfg_radio_validate(const struct cfg_radio *c)
 	if (c->channel > RF24_MAX_CHANNEL)
 		return -1;
 
-	if ((c->rate < RF24_RATE_1M) || (c->rate > RF24_RATE_250K))
+	if ((c->rate < RF24_RATE_MIN) || (c->rate > RF24_RATE_MAX))
 		return -1;
 
-	if ((c->crc < RF24_CRC_NONE) || (c->crc > RF24_CRC_16_BITS))
+	if ((c->crc < RF24_CRC_MIN) || (c->crc > RF24_CRC_MAX))
 		return -1;
 
 	if ((c->pwr < RF24_PA_MIN) || (c->pwr > RF24_PA_MAX))
