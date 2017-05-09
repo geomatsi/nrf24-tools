@@ -4,8 +4,8 @@ project("nRF24 Tools")
 ##
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake/Modules)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -pedantic")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c99 -Wall -pedantic -D_GNU_SOURCE")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -Wall -pedantic -D_GNU_SOURCE")
 
 find_package(ProtobufC REQUIRED)
 set(PROTOBUF_DESC "node_msg_v1.proto" CACHE STRING "Protobuf protocol description")
