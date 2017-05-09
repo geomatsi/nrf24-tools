@@ -1,9 +1,29 @@
 #ifndef __CFG_H__
 #define __CFG_H__
 
+#include <stdbool.h>
+#include <string.h>
+
 #include <RF24.h>
 
 #define MAX_CONFIG_SIZE	4096
+
+/* common cfg ops */
+
+#ifdef WITH_JSON_CONFIG
+
+int cfg_init(const char *path);
+
+#else
+
+static inline int cfg_init(const char *path)
+{
+	return 0;
+}
+
+#endif
+
+/* config 'nrf24 radio' section */
 
 #define RADIO_TAG	"radio"
 
@@ -13,12 +33,8 @@
 #define RADIO_TAG_CRC	"crc"
 #define RADIO_TAG_PWR	"pwr"
 
-#define PLAT_TAG	"platform"
-
-#define PLAT_TAG_NAME	"name"
-#define PLAT_TAG_SPIDEV	"spidev"
-
-struct radio_conf {
+struct cfg_radio {
+	/* payload 0 .. 32, 0 for dynamic payload */
 	uint8_t payload;
 	uint8_t channel;
 	uint8_t rate;
@@ -26,17 +42,12 @@ struct radio_conf {
 	uint8_t pwr;
 };
 
-struct plat_conf {
-	char *name;
-	char *spidev;
-};
-
-static inline int payload_is_dynamic(struct radio_conf *c)
+static inline bool cfg_payload_is_dynamic(struct cfg_radio *c)
 {
 	return !!(c->payload);
 }
 
-static inline void init_radio_conf(struct radio_conf *c)
+static inline void cfg_radio_init(struct cfg_radio *c)
 {
 	if (!c)
 		return;
@@ -50,18 +61,7 @@ static inline void init_radio_conf(struct radio_conf *c)
 	c->pwr = RF24_PA_MAX;
 }
 
-static inline void init_plat_conf(struct plat_conf *c)
-{
-	if (!c)
-		return;
-
-	memset(c, 0x0, sizeof(*c));
-
-	c->name = strdup("default");
-	c->spidev = strdup("/dev/spidev0.0");
-}
-
-static inline int validate_radio_conf(const struct radio_conf *c)
+static inline int cfg_radio_validate(const struct cfg_radio *c)
 {
 	if ((c->payload < 0) || (c->payload > 32))
 		return -1;
@@ -81,19 +81,63 @@ static inline int validate_radio_conf(const struct radio_conf *c)
 	return 0;
 }
 
+static inline void cfg_radio_dump(const struct cfg_radio *c)
+{
+	printf("rconf: payload[%d] channel[%d] rate[%d] crc[%d] pwr[%d]\n",
+		c->payload, c->channel, c->rate, c->crc, c->pwr);
+}
+
 #ifdef WITH_JSON_CONFIG
 
-int read_radio_conf(struct radio_conf *c, const char *path);
-int read_plat_conf(struct plat_conf *c, const char *path);
+int cfg_radio_read(struct cfg_radio *c);
 
 #else
 
-static inline int read_radio_conf(struct radio_conf *c, const char *path)
+static inline int cfg_radio_read(struct cfg_radio *c)
 {
 	return 0;
 }
 
-static inline int read_plat_conf(struct plat_conf *c, const char *path)
+#endif
+
+/* config 'platform' section */
+
+#define PLAT_TAG	"platform"
+
+#define PLAT_TAG_NAME	"name"
+#define PLAT_TAG_SPIDEV	"spidev"
+
+#define PLAT_STD_NAME	"default"
+#define PLAT_STD_SPIDEV	"/dev/spidev0.0"
+
+struct cfg_platform {
+	char *name;
+	char *spidev;
+};
+
+static inline void cfg_platform_init(struct cfg_platform *c)
+{
+	if (!c)
+		return;
+
+	memset(c, 0x0, sizeof(*c));
+
+	c->name = PLAT_STD_NAME;
+	c->spidev = PLAT_STD_SPIDEV;
+}
+
+static inline void cfg_platform_dump(const struct cfg_platform *c)
+{
+	printf("pconf: platform[%s] spidev[%s]\n", c->name, c->spidev);
+}
+
+#ifdef WITH_JSON_CONFIG
+
+int cfg_platform_read(struct cfg_platform *c);
+
+#else
+
+static inline int cfg_platform_read(struct cfg_platform *c)
 {
 	return 0;
 }

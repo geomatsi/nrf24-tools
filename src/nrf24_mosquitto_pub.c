@@ -127,8 +127,8 @@ int main(int argc, char *argv[])
 	int i, j, tmp;
 	int rc;
 
-	struct plat_conf pconf = {0};
-	struct radio_conf rconf = {0};
+	struct cfg_platform pconf = {0};
+	struct cfg_radio rconf = {0};
 	char *config_name = NULL;
 
 	char *host = "localhost";
@@ -157,8 +157,8 @@ int main(int argc, char *argv[])
 	};
 
 	/* use sane config defaults */
-	init_radio_conf(&rconf);
-	init_plat_conf(&pconf);
+	cfg_radio_init(&rconf);
+	cfg_platform_init(&pconf);
 
 	while (opt = getopt_long(argc, argv, opts, longopts, &opt), opt > 0) {
 		switch (opt) {
@@ -167,15 +167,21 @@ int main(int argc, char *argv[])
 			break;
 		case 'C':
 			config_name = strdup(optarg);
-			rc = read_radio_conf(&rconf, config_name);
+			rc = cfg_init(config_name);
 			if (rc < 0) {
-				printf("ERR: couldn't read config file\n");
+				printf("ERR: failed to parse config\n");
 				exit(-1);
 			}
 
-			rc = read_plat_conf(&pconf, config_name);
+			rc = cfg_radio_read(&rconf);
 			if (rc < 0) {
-				printf("ERR: couldn't read config file\n");
+				printf("ERR: failed to get radio config\n");
+				exit(-1);
+			}
+
+			rc = cfg_platform_read(&pconf);
+			if (rc < 0) {
+				printf("ERR: failed to get platform config\n");
 				exit(-1);
 			}
 			break;
@@ -243,16 +249,14 @@ int main(int argc, char *argv[])
 
 	/* validate radio settings */
 
-	printf("XXXX: l[%u] c[%u] r[%u] e[%u] p[%u]\n",
-		rconf.payload, rconf.channel, rconf.rate, rconf.crc, rconf.pwr);
-
-	rc = validate_radio_conf(&rconf);
+	cfg_radio_dump(&rconf);
+	rc = cfg_radio_validate(&rconf);
 	if (rc < 0) {
 		printf("ERR: invalid radio config\n");
 		exit(-1);
 	}
 
-	printf("YYYY: plat[%s] spidev[%s]\n", pconf.name, pconf.spidev);
+	cfg_platform_dump(&pconf);
 
 	/* setup mosquitto */
 
@@ -295,7 +299,7 @@ int main(int argc, char *argv[])
 
 	/* */
 
-	if (payload_is_dynamic(&rconf))
+	if (cfg_payload_is_dynamic(&rconf))
 		rf24_enable_dyn_payload(pnrf);
 	else
 		rf24_set_payload_size(pnrf, rconf.payload);
@@ -341,7 +345,7 @@ int main(int argc, char *argv[])
 		printf("INFO: data ready in pipe 0x%02x\n", pipe);
 		memset(recv_buffer, 0x0, sizeof(recv_buffer));
 
-		if (payload_is_dynamic(&rconf)) {
+		if (rf24_is_dyn_payload(pnrf)) {
 			recv_length = (int)rf24_get_dyn_payload_size(pnrf);
 			if (recv_length == 0xff) {
 				printf("WARN: failed to get dynamic payload length\n");

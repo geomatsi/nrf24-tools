@@ -16,7 +16,8 @@ void test_conf_usage(char *name)
 
 int main(int argc, char *argv[])
 {
-	struct radio_conf rconf;
+	struct cfg_platform pconf;
+	struct cfg_radio rconf;
 	char *name = NULL;
 	int ret;
 
@@ -40,18 +41,34 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	init_radio_conf(&rconf);
-	ret = validate_radio_conf(&rconf);
+	/* init default radio config */
+	cfg_radio_init(&rconf);
+	ret = cfg_radio_validate(&rconf);
 	printf("default radio config validation %s\n",
 		(ret < 0) ? "FAILED" : "PASSED");
+	cfg_radio_dump(&rconf);
 
-	read_radio_conf(&rconf, name);
-	ret = validate_radio_conf(&rconf);
+	/* init default radio config */
+	cfg_platform_init(&pconf);
+	cfg_platform_dump(&pconf);
+
+	/* open and parse config */
+	ret = cfg_init(name);
+	if (ret < 0) {
+		printf("failed to read config\n");
+		exit(ret);
+	}
+
+	/* read and validate radio config */
+	cfg_radio_read(&rconf);
+	ret = cfg_radio_validate(&rconf);
 	printf("new radio config validation %s\n",
 		(ret < 0) ? "FAILED" : "PASSED");
+	cfg_radio_dump(&rconf);
 
-	printf("r: chan[%d] rate[%d] crc[%d] pwr[%d]\n",
-		rconf.channel, rconf.rate, rconf.crc, rconf.pwr);
+	/* read platform config */
+	cfg_platform_read(&pconf);
+	cfg_platform_dump(&pconf);
 
 	return 0;
 }
