@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
 			break;
 		case 'C':
 			config_name = strdup(optarg);
-			rc = cfg_init(config_name);
+			rc = cfg_from_file(config_name);
 			if (rc < 0) {
 				printf("ERR: failed to parse config\n");
 				exit(-1);

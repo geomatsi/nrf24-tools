@@ -8,7 +8,7 @@
 static char cfg_txt[MAX_CONFIG_SIZE] = {0};
 static json_object *cfg_obj = NULL;
 
-int cfg_init(const char *path)
+int cfg_from_file(const char *path)
 {
 	FILE *fp;
 	int ret;
@@ -32,7 +32,17 @@ int cfg_init(const char *path)
 		return -1;
 	}
 
-	cfg_obj = json_tokener_parse(cfg_txt);
+	return cfg_from_string(cfg_txt);
+}
+
+int cfg_from_string(const char *buffer)
+{
+	if (!buffer) {
+		printf("null input string\n");
+		return -1;
+	}
+
+	cfg_obj = json_tokener_parse(buffer);
 	if (!cfg_obj) {
 		printf("failed to parse config\n");
 		return -1;
@@ -40,7 +50,6 @@ int cfg_init(const char *path)
 
 	return 0;
 }
-
 
 int cfg_radio_read(struct cfg_radio *c)
 {

@@ -12,11 +12,17 @@
 
 #ifdef WITH_JSON_CONFIG
 
-int cfg_init(const char *path);
+int cfg_from_file(const char *path);
+int cfg_from_string(const char *buf);
 
 #else
 
-static inline int cfg_init(const char *path)
+static inline int cfg_from_file(const char *path)
+{
+	return 0;
+}
+
+int cfg_from_string(const char *buf)
 {
 	return 0;
 }
