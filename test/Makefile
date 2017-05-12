@@ -2,7 +2,12 @@
 #
 #
 
-all: tests
+all: run_tests
+
+#
+
+CC = $(CROSS_COMPILE)gcc
+CXX = $(CROSS_COMPILE)g++
 
 #
 
@@ -10,26 +15,30 @@ PRJ_DIR ?= ..
 
 VPATH = $(PRJ_DIR)/common:$(PRJ_DIR)/test
 
-CFLAGS += -DWITH_JSON_CONFIG
-CFLAGS += -I$(PRJ_DIR)/include -I$(PRJ_DIR)/test
+CPPFLAGS += -DWITH_JSON_CONFIG
+CPPFLAGS += -I$(PRJ_DIR)/include -I$(PRJ_DIR)/test
 
-LIBS = -ljson-c
-
-#
-
-TEST1_SRCS := test_conf.c config.c
-TEST1_OBJS := $(TEST1_SRCS:.c=.o)
-
-test1: $(TEST1_OBJS)
-	$(CC) $(TEST1_OBJS) $(LIBS) -o $@
+LIBS = -ljson-c -lCppUTest -lCppUTestExt
 
 #
 
-tests: test1
+TEST_OBJS := main_test.o conf_tests.o config.o
+
+test: $(TEST_OBJS)
+	$(CXX) $(TEST_OBJS) $(LIBS) -o $@
+
+#
+
+tests: test
+
+#
+
+run_tests: tests
+	./test -c
 
 #
 
 clean:
 	rm -rf *.o
-	rm test1
+	rm test
 
