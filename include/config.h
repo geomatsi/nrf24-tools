@@ -128,8 +128,8 @@ static inline void cfg_platform_init(struct cfg_platform *c)
 
 	memset(c, 0x0, sizeof(*c));
 
-	c->name = PLAT_STD_NAME;
-	c->spidev = PLAT_STD_SPIDEV;
+	c->name = (char *)PLAT_STD_NAME;
+	c->spidev = (char *)PLAT_STD_SPIDEV;
 }
 
 static inline void cfg_platform_dump(const struct cfg_platform *c)
