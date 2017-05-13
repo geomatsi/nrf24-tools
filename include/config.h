@@ -50,7 +50,7 @@ struct cfg_radio {
 
 static inline bool cfg_payload_is_dynamic(struct cfg_radio *c)
 {
-	return !!(c->payload);
+	return (c->payload == 0);
 }
 
 static inline void cfg_radio_init(struct cfg_radio *c)
