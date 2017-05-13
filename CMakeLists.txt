@@ -4,7 +4,7 @@ project("nRF24 Tools")
 ##
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake/Modules)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c99 -Wall -pedantic -D_GNU_SOURCE")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -D_GNU_SOURCE")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 -Wall -pedantic -D_GNU_SOURCE")
 
 find_package(ProtobufC REQUIRED)
@@ -19,15 +19,8 @@ option (WITH_NRF24_TEST_HUB "Build nRF24L01 PRX MultiCeiver test tool" ON)
 option (WITH_NRF24_DUMP_REGS "Build nRF24L01 register dump tool" ON)
 option (WITH_NRF24_MOSQUITTO_PUB "Build nRF24L01 mosquitto publisher" ON)
 option (WITH_SERIAL_MOSQUITTO_TEST "Build serial port mosquitto test publisher" OFF)
-option (WITH_JSON_CONFIG "USE_JSON_CONFIG" ON)
-
-##
-
-if (WITH_JSON_CONFIG)
-	set (CONF_SRCS common/config.c)
-	add_definitions(-DWITH_JSON_CONFIG)
-	message(STATUS "enable JSON config")
-endif ()
+option (WITH_JSON_CONFIG "JSON config support" ON)
+option (WITH_UNIT_TESTS "Build unit tests" ON)
 
 ## select nRF24 connector: SPIDEV/UM232H/...
 
@@ -73,6 +66,14 @@ if ( NRF24_CONN STREQUAL "ORANGE_PI_ZERO" )
 	set (CONN_SRCS ${ORANGE_PI_ZERO_SRCS}
 		common/gpio-sysfs.c common/spi-spidev.c common/delay.c)
 	message(STATUS "nRF24 connector: ${NRF24_CONN} (${CONN_SRCS})")
+endif ()
+
+##
+
+if (WITH_JSON_CONFIG)
+	set (CONF_SRCS common/config.c)
+	add_definitions(-DWITH_JSON_CONFIG)
+	message(STATUS "enable JSON config")
 endif ()
 
 ## executable targets
@@ -133,6 +134,11 @@ NAMES json.h
 PATHS /usr/include/json-c
 )
 
+FIND_PATH(CPPUNIT_INCLUDE_DIR
+NAMES CppUTest/TestHarness.h
+PATHS /usr/include /usr/local/include
+)
+
 ## find libraries
 
 FIND_LIBRARY(NRF24_LIBRARY
@@ -165,10 +171,17 @@ NAMES json-c
 PATHS /usr/lib /usr/lib/x86_64-linux-gnu
 )
 
+FIND_LIBRARY(CPPUNIT_LIBRARY
+NAMES CppUTest CppUTestExt
+PATHS /usr/lib /usr/lib/x86_64-linux-gnu /usr/local/lib
+)
+
 ## set headers paths
 
-include_directories(${NRF24_INCLUDE_DIR})
+include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${PROTOBUFC_INCLUDE_DIRS})
+include_directories(${NRF24_INCLUDE_DIR})
 
 if ( NRF24_CONN STREQUAL "UM232H" )
 	include_directories(${FTDI_INCLUDE_DIR})
@@ -182,8 +195,19 @@ if (WITH_SERIAL_MOSQUITTO_TEST)
 	include_directories(${MOSQUITTO_INCLUDE_DIR})
 endif ()
 
-include_directories(${PROJECT_SOURCE_DIR}/include)
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
+if (WITH_JSON_CONFIG)
+	include_directories(${JSON_INCLUDE_DIR})
+endif ()
+
+if (WITH_UNIT_TESTS)
+	include_directories(${CPPUNIT_INCLUDE_DIR})
+endif ()
+
+# set path to spidev.h header for specific kernel
+if(DEFINED KERNEL_DIR)
+	include_directories(${KERNEL_DIR}/include/linux/spi)
+	include_directories(${KERNEL_DIR}/include/uapi/linux/spi)
+endif ()
 
 ## set libraries paths
 
@@ -260,11 +284,22 @@ if (WITH_SERIAL_MOSQUITTO_TEST)
 	target_link_libraries(serial_mosquitto_test ${MOSQUITTO_LIBRARY})
 endif ()
 
-## misc
+## tests
 
-# set path to spidev.h header for specific kernel
+if (WITH_UNIT_TESTS)
+	enable_testing()
 
-if(DEFINED KERNEL_DIR)
-	include_directories(${KERNEL_DIR}/include/linux/spi)
-	include_directories(${KERNEL_DIR}/include/uapi/linux/spi)
+	add_executable(
+		test1
+		test/main_test.cpp
+		test/conf_tests.cpp
+		${CONF_SRCS})
+
+	target_link_libraries(test1 ${CPPUNIT_LIBRARY})
+
+	if (WITH_JSON_CONFIG)
+		target_link_libraries(test1 ${JSON_LIBRARY})
+	endif ()
+
+	add_test(test1 "./test1")
 endif ()

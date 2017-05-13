@@ -5,7 +5,6 @@
 #include <stdio.h>
 
 #include <CppUTest/TestHarness.h>
-#include "CppUTestExt/MockSupport.h"
 
 extern "C" {
 #include "config.h"
@@ -18,8 +17,6 @@ TEST_GROUP(conf)
 
 	void setup()
 	{
-		mock().disable();
-
 		memset(&pconf, 0x0, sizeof(pconf));
 		memset(&rconf, 0x0, sizeof(rconf));
 	}
