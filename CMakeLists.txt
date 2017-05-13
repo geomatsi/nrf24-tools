@@ -20,7 +20,7 @@ option (WITH_NRF24_DUMP_REGS "Build nRF24L01 register dump tool" ON)
 option (WITH_NRF24_MOSQUITTO_PUB "Build nRF24L01 mosquitto publisher" ON)
 option (WITH_SERIAL_MOSQUITTO_TEST "Build serial port mosquitto test publisher" OFF)
 option (WITH_JSON_CONFIG "JSON config support" ON)
-option (WITH_UNIT_TESTS "Build unit tests" ON)
+option (WITH_UNIT_TESTS "Build unit tests" OFF)
 
 ## select nRF24 connector: SPIDEV/UM232H/...
 
