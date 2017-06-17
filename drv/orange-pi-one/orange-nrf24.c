@@ -25,6 +25,18 @@ static uint8_t lsb = 0;
 
 /* */
 
+static void f_delay_ms(int mdelay)
+{
+	usleep(1000*mdelay);
+}
+
+static void f_delay_us(int udelay)
+{
+	usleep(udelay);
+}
+
+/* */
+
 static void f_ce(int level)
 {
 	(void) gpio_write(ORANGE_NRF24_CE_NAME, level);
@@ -41,6 +53,8 @@ int nrf24_driver_setup(struct rf24 *pnrf, char *spidev)
 {
 	/* rf24 ops */
 
+	pnrf->delay_ms = f_delay_ms;
+	pnrf->delay_us = f_delay_us;
 	pnrf->csn = NULL;
 	pnrf->ce = f_ce;
 	pnrf->spi_xfer = NULL;

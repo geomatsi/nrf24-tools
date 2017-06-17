@@ -144,4 +144,6 @@ int gpio_write(char *name, int value)
 	}
 
 	fclose(file);
+
+	return ret;
 }

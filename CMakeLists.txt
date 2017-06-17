@@ -35,36 +35,36 @@ set(NRF24_CONN "UM232H" CACHE STRING "nRF24x connector chosen by the user at CMa
 
 if ( NRF24_CONN STREQUAL "PCDUINO_UPSTREAM" )
 	set (CONN_SRCS ${PCDUINO_UPSTREAM_SRCS}
-		common/gpio-sysfs.c common/spi-spidev.c common/delay.c)
+		common/gpio-sysfs.c common/spi-spidev.c)
 	message(STATUS "nRF24 connector: ${NRF24_CONN} (${CONN_SRCS})")
 endif ()
 
 if ( NRF24_CONN STREQUAL "PCDUINO_LEGACY" )
 	set (CONN_SRCS ${PCDUINO_LEGACY_SRCS}
-		common/gpio-sysfs.c common/spi-spidev.c common/delay.c)
+		common/gpio-sysfs.c common/spi-spidev.c)
 	message(STATUS "nRF24 connector: ${NRF24_CONN} (${CONN_SRCS})")
 endif ()
 
 if ( NRF24_CONN STREQUAL "BONE" )
 	set (CONN_SRCS ${BONE_SRCS}
-		common/gpio-sysfs.c common/spi-spidev.c common/delay.c)
+		common/gpio-sysfs.c common/spi-spidev.c)
 	message(STATUS "nRF24 connector: ${NRF24_CONN} (${CONN_SRCS})")
 endif ()
 
 if ( NRF24_CONN STREQUAL "UM232H" )
-	set (CONN_SRCS ${UM232H_SRCS} common/delay.c)
+	set (CONN_SRCS ${UM232H_SRCS})
 	message(STATUS "nRF24 connector: ${NRF24_CONN} (${CONN_SRCS})")
 endif ()
 
 if ( NRF24_CONN STREQUAL "ORANGE_PI_ONE" )
 	set (CONN_SRCS ${ORANGE_PI_ONE_SRCS}
-		common/gpio-sysfs.c common/spi-spidev.c common/delay.c)
+		common/gpio-sysfs.c common/spi-spidev.c)
 	message(STATUS "nRF24 connector: ${NRF24_CONN} (${CONN_SRCS})")
 endif ()
 
 if ( NRF24_CONN STREQUAL "ORANGE_PI_ZERO" )
 	set (CONN_SRCS ${ORANGE_PI_ZERO_SRCS}
-		common/gpio-sysfs.c common/spi-spidev.c common/delay.c)
+		common/gpio-sysfs.c common/spi-spidev.c)
 	message(STATUS "nRF24 connector: ${NRF24_CONN} (${CONN_SRCS})")
 endif ()
 
@@ -146,11 +146,6 @@ NAMES nrf24
 PATHS /usr/lib /usr/local/lib
 )
 
-FIND_LIBRARY(NRF24_MB_LIBRARY
-NAMES nrf24_mb
-PATHS /usr/lib /usr/local/lib
-)
-
 FIND_LIBRARY(PROTOBUF_C_LIBRARY
 NAMES protobuf-c
 PATHS /usr/lib /usr/local/lib
@@ -212,11 +207,7 @@ endif ()
 ## set libraries paths
 
 if (WITH_NRF24_TEST_PTX)
-	if ( NRF24_CONN MATCHES "ORANGE_PI" )
-		target_link_libraries(nrf24_test_ptx ${NRF24_MB_LIBRARY})
-	else ()
-		target_link_libraries(nrf24_test_ptx ${NRF24_LIBRARY})
-	endif ()
+	target_link_libraries(nrf24_test_ptx ${NRF24_LIBRARY})
 
 	if ( NRF24_CONN STREQUAL "UM232H" )
 		target_link_libraries(nrf24_test_ptx ${FTDI_LIBRARY})
@@ -224,11 +215,7 @@ if (WITH_NRF24_TEST_PTX)
 endif ()
 
 if (WITH_NRF24_TEST_PRX)
-	if ( NRF24_CONN MATCHES "ORANGE_PI" )
-		target_link_libraries(nrf24_test_prx ${NRF24_MB_LIBRARY})
-	else ()
-		target_link_libraries(nrf24_test_prx ${NRF24_LIBRARY})
-	endif ()
+	target_link_libraries(nrf24_test_prx ${NRF24_LIBRARY})
 
 	if ( NRF24_CONN STREQUAL "UM232H" )
 		target_link_libraries(nrf24_test_prx ${FTDI_LIBRARY})
@@ -236,11 +223,7 @@ if (WITH_NRF24_TEST_PRX)
 endif ()
 
 if (WITH_NRF24_DUMP_REGS)
-	if ( NRF24_CONN MATCHES "ORANGE_PI" )
-		target_link_libraries(nrf24_dump_regs ${NRF24_MB_LIBRARY})
-	else ()
-		target_link_libraries(nrf24_dump_regs ${NRF24_LIBRARY})
-	endif ()
+	target_link_libraries(nrf24_dump_regs ${NRF24_LIBRARY})
 
 	if ( NRF24_CONN STREQUAL "UM232H" )
 		target_link_libraries(nrf24_dump_regs ${FTDI_LIBRARY})
@@ -249,12 +232,7 @@ endif ()
 
 if (WITH_NRF24_TEST_HUB)
 	target_link_libraries(nrf24_test_hub ${PROTOBUFC_LIBRARIES})
-
-	if ( NRF24_CONN MATCHES "ORANGE_PI" )
-		target_link_libraries(nrf24_test_hub ${NRF24_MB_LIBRARY})
-	else ()
-		target_link_libraries(nrf24_test_hub ${NRF24_LIBRARY})
-	endif ()
+	target_link_libraries(nrf24_test_hub ${NRF24_LIBRARY})
 
 	if ( NRF24_CONN STREQUAL "UM232H" )
 		target_link_libraries(nrf24_test_hub ${FTDI_LIBRARY})
@@ -264,12 +242,7 @@ endif ()
 if (WITH_NRF24_MOSQUITTO_PUB)
 	target_link_libraries(nrf24_mosquitto_pub ${MOSQUITTO_LIBRARY})
 	target_link_libraries(nrf24_mosquitto_pub ${PROTOBUFC_LIBRARIES})
-
-	if ( NRF24_CONN MATCHES "ORANGE_PI" )
-		target_link_libraries(nrf24_mosquitto_pub ${NRF24_MB_LIBRARY})
-	else ()
-		target_link_libraries(nrf24_mosquitto_pub ${NRF24_LIBRARY})
-	endif ()
+	target_link_libraries(nrf24_mosquitto_pub ${NRF24_LIBRARY})
 
 	if (WITH_JSON_CONFIG)
 		target_link_libraries(nrf24_mosquitto_pub ${JSON_LIBRARY})

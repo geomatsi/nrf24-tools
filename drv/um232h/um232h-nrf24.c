@@ -8,6 +8,18 @@ struct ftdi_context fc;
 
 /* */
 
+static void f_delay_ms(int mdelay)
+{
+	usleep(1000*mdelay);
+}
+
+static void f_delay_us(int udelay)
+{
+	usleep(udelay);
+}
+
+/* */
+
 static void f_csn(int level)
 {
 	um232h_gpiol_set(&fc, BIT_L2, level);
@@ -34,6 +46,8 @@ int nrf24_driver_setup(struct rf24 *pnrf, char *spidev)
 
 	/* rf24 ops */
 
+	pnrf->delay_ms = f_delay_ms;
+	pnrf->delay_us = f_delay_us;
 	pnrf->csn = f_csn;
 	pnrf->ce = f_ce;
 	pnrf->spi_xfer = f_spi_xfer;
