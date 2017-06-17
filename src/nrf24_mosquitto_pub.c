@@ -287,7 +287,7 @@ int main(int argc, char *argv[])
 	pnrf = &nrf;
 	memset(pnrf, 0x0, sizeof(*pnrf));
 
-	if (0 > nrf24_driver_setup(pnrf, pconf.spidev)) {
+	if (0 > nrf24_driver_setup(pnrf, (void *)&pconf)) {
 		printf("ERR: can't setup gpio\n");
 		exit(-1);
 	}

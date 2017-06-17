@@ -106,19 +106,39 @@ static inline int cfg_radio_read(struct cfg_radio *c)
 
 #endif
 
-/* config 'platform' section */
+/* config 'sbc' section */
 
-#define PLAT_TAG	"platform"
+#define PLAT_TAG		"sbc"
+#define PLAT_TAG_NAME		"name"
 
-#define PLAT_TAG_NAME	"name"
-#define PLAT_TAG_SPIDEV	"spidev"
+#define PLAT_TAG_GPIO		"gpio"
+#define PLAT_TAG_GPIO_CE	"ce_gpio"
+#define PLAT_TAG_GPIO_CE_NAME	"ce_name"
+#define PLAT_TAG_GPIO_CSN	"csn_gpio"
+#define PLAT_TAG_GPIO_CSN_NAME	"csn_name"
 
-#define PLAT_STD_NAME	"default"
-#define PLAT_STD_SPIDEV	"/dev/spidev0.0"
+#define PLAT_TAG_SPIDEV		"spidev"
+#define PLAT_TAG_SPIDEV_NAME	"name"
+#define PLAT_TAG_SPIDEV_SPEED	"speed"
+#define PLAT_TAG_SPIDEV_MODE	"mode"
+#define PLAT_TAG_SPIDEV_BITS	"bits"
+#define PLAT_TAG_SPIDEV_LSB	"lsb"
+
+#define DFLT_SPIDEV	"/dev/spidev0.0"
 
 struct cfg_platform {
 	char *name;
+
+	int pin_ce;
+	char *pin_ce_name;
+	int pin_csn;
+	char *pin_csn_name;
+
 	char *spidev;
+	uint32_t speed;
+	uint8_t mode;
+	uint8_t bits;
+	uint8_t lsb;
 };
 
 static inline void cfg_platform_init(struct cfg_platform *c)
@@ -128,13 +148,27 @@ static inline void cfg_platform_init(struct cfg_platform *c)
 
 	memset(c, 0x0, sizeof(*c));
 
-	c->name = (char *)PLAT_STD_NAME;
-	c->spidev = (char *)PLAT_STD_SPIDEV;
+	c->name = NULL;
+
+	c->pin_ce_name = NULL;
+	c->pin_ce = 0;
+	c->pin_csn_name = NULL;
+	c->pin_csn = 0;
+
+	c->spidev = (char *)DFLT_SPIDEV;
+	c->speed = 1000000;
+	c->mode = 0;
+	c->bits = 8;
+	c->lsb = 0;
 }
 
 static inline void cfg_platform_dump(const struct cfg_platform *c)
 {
-	printf("pconf: platform[%s] spidev[%s]\n", c->name, c->spidev);
+	printf("pconf: platform[%s]\n", c->name);
+	printf("pconf: spidev[%s] speed(%u) mode(%u) bits(%u) lsb(%u)\n",
+		c->spidev, c->speed, c->mode, c->bits, c->lsb);
+	printf("pconf: pin_ce[%d][%s] pin_csn[%d][%s]\n",
+		c->pin_ce, c->pin_ce_name, c->pin_csn, c->pin_csn_name);
 }
 
 #ifdef WITH_JSON_CONFIG

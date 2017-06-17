@@ -24,6 +24,7 @@ option (WITH_UNIT_TESTS "Build unit tests" OFF)
 
 ## select nRF24 connector: SPIDEV/UM232H/...
 
+file(GLOB_RECURSE SBC_SRCS ${PROJECT_SOURCE_DIR}/drv/sbc/*.c)
 file(GLOB_RECURSE UM232H_SRCS ${PROJECT_SOURCE_DIR}/drv/um232h/*.c)
 file(GLOB_RECURSE PCDUINO_UPSTREAM_SRCS ${PROJECT_SOURCE_DIR}/drv/pcduino-upstream/*.c)
 file(GLOB_RECURSE PCDUINO_LEGACY_SRCS ${PROJECT_SOURCE_DIR}/drv/pcduino-legacy/*.c)
@@ -32,6 +33,12 @@ file(GLOB_RECURSE ORANGE_PI_ONE_SRCS ${PROJECT_SOURCE_DIR}/drv/orange-pi-one/*.c
 file(GLOB_RECURSE ORANGE_PI_ZERO_SRCS ${PROJECT_SOURCE_DIR}/drv/orange-pi-zero/*.c)
 
 set(NRF24_CONN "UM232H" CACHE STRING "nRF24x connector chosen by the user at CMake configure time")
+
+if ( NRF24_CONN STREQUAL "SBC" )
+	set (CONN_SRCS ${SBC_SRCS}
+		common/gpio-sysfs.c common/spi-spidev.c)
+	message(STATUS "nRF24 connector: ${NRF24_CONN} (${CONN_SRCS})")
+endif ()
 
 if ( NRF24_CONN STREQUAL "PCDUINO_UPSTREAM" )
 	set (CONN_SRCS ${PCDUINO_UPSTREAM_SRCS}

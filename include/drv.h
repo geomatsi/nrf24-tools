@@ -3,6 +3,6 @@
 
 #include <RF24.h>
 
-int nrf24_driver_setup(struct rf24 *pnrf, char *spidev);
+int nrf24_driver_setup(struct rf24 *pnrf, void *data);
 
 #endif /* __DRV_H__ */
