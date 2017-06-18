@@ -22,7 +22,7 @@ static inline int cfg_from_file(const char *path)
 	return 0;
 }
 
-int cfg_from_string(const char *buf)
+static inline int cfg_from_string(const char *buf)
 {
 	return 0;
 }
