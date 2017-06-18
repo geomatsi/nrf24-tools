@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "config.h"
 #include "RF24.h"
 #include "drv.h"
 
@@ -19,16 +20,10 @@ static struct rf24 nrf;
 
 void nrf24_test_usage(char *name)
 {
-	printf("usage: %s [-h] -d <spidev>\n", name);
+	printf("usage: %s [-h] -c /path/to/config\n", name);
 	printf("%-30s%s\n", "-h, --help", "this help message");
+	printf("%-30s%s\n", "-c, --config /path/to/config/file", "config file");
 	printf("%-30s%s\n", "-a, --address <addrs>", "PRX pipes addresses in the form XX:XX:XX:XX:XX[,XX:XX:XX:XX:XX[,XX[,XX[,XX[,XX]]]]]");
-	printf("%-30s%s\n", "-d, --device <spidev>", "spidev for nRF24L01, default is '/dev/spidev0.0");
-	printf("%-30s%s\n", "-c, --channel <num>", "set channel number: 0 .. 127");
-	printf("%-30s%s\n", "-r, --rate <rate>", "set data rate: 0(1M), 1(2M), 2(250K)");
-	printf("%-30s%s\n", "-e, --crc <mode>", "set CRC encoding scheme: 0(none), 1 (8 bits), 2(16 bits)");
-	printf("%-30s%s\n", "-p, --power <level>", "set TX output power: 0(-18dBm), 1(-12dBm), 2(-6dBm), 3(0dBm)");
-	printf("%-30s%s\n", "--dynamic-payload", "enable dynamic payload support");
-	printf("%-30s%s\n", "--payload-length <length>", "set static payload length to 0..32 bytes (default value is 32)");
 	printf("%-30s%s\n", "--parse-message", "parse messages according to protobuf description");
 }
 
@@ -83,7 +78,6 @@ int main(int argc, char *argv[])
 	/* by default only the first pipe is enabled */
 	uint8_t pipe_en[6] = {1, 0, 0, 0, 0, 0};
 
-	bool dynamic_payload = false;
 	bool parse_message = false;
 
 	uint8_t recv_buffer[32];
@@ -95,130 +89,115 @@ int main(int argc, char *argv[])
 	char *sa, *sb, *sc, *sd;
 	unsigned int digit;
 	int i, j, tmp;
+	int rc;
 
-	/* use sane nRF24 defaults */
-
-	int channel = 76;
-	int rate = RF24_RATE_1M;
-	int crc = RF24_CRC_16_BITS;
-	int power = RF24_PA_MAX;
+	struct cfg_platform pconf = {0};
+	struct cfg_radio rconf = {0};
+	char *config_name = NULL;
 
 	/* command line options */
 
-	char *spidev_name = "/dev/spidev0.0";
-
 	int opt;
-	const char opts[] = "a:p:e:r:c:d:h";
+	const char opts[] = "a:c:h";
 	const struct option longopts[] = {
+		{"config", required_argument, NULL, 'c'},
 		{"address", required_argument, NULL, 'a'},
-		{"device", required_argument, NULL, 'd'},
-		{"channel", required_argument, NULL, 'c'},
-		{"rate", required_argument, NULL, 'r'},
-		{"crc", required_argument, NULL, 'e'},
-		{"power", required_argument, NULL, 'p'},
-		{"dynamic-payload", no_argument, NULL, '0'},
-		{"payload-length", required_argument, NULL, '1'},
-		{"parse-message", no_argument, NULL, '2'},
+		{"parse-message", no_argument, NULL, '1'},
 		{"help", optional_argument, NULL, 'h'},
 		{NULL,}
 	};
 
+	/* use sane config defaults */
+
+	cfg_radio_init(&rconf);
+	cfg_platform_init(&pconf);
+
 	while (opt = getopt_long(argc, argv, opts, longopts, &opt), opt > 0) {
 		switch (opt) {
-			case 'd':
-				spidev_name = strdup(optarg);
-				break;
-			case 'a':
-				sa = strdup(optarg);
-				i = 0;
+		case 'c':
+			config_name = strdup(optarg);
+			rc = cfg_from_file(config_name);
+			if (rc < 0) {
+				printf("ERR: failed to parse config\n");
+				exit(-1);
+			}
 
-				while ((sb = strsep(&sa, ",")) && (i < 6)) {
-					sc = strdup(sb);
-					pipe_en[i] = 1;
-					j = 0;
+			rc = cfg_radio_read(&rconf);
+			if (rc < 0) {
+				printf("ERR: failed to get radio config\n");
+				exit(-1);
+			}
 
-					while ((sd = strsep(&sc, ":")) && (j < 5)) {
-						tmp = sscanf(sd, "%x", &digit);
-						if (tmp != 1) {
-							printf("ERR: invalid pipe%d address entry <%s>\n",
-									i, sd);
-							exit(-1);
-						}
+			rc = cfg_platform_read(&pconf);
+			if (rc < 0) {
+				printf("ERR: failed to get platform config\n");
+				exit(-1);
+			}
+			break;
+		case 'a':
+			sa = strdup(optarg);
+			i = 0;
 
-						if (digit > 0xff) {
-							printf("ERR: invalid pipe%d address <%s>\n",
-									i, sb);
-							exit(-1);
-						}
+			while ((sb = strsep(&sa, ",")) && (i < 6)) {
+				sc = strdup(sb);
+				pipe_en[i] = 1;
+				j = 0;
 
-						pipe_addr[i][j] = digit;
-						j++;
-					}
-
-					/* data pipes 1-5 share 4 most significant bytes */
-					if (((i < 2) && (j != 5)) || ((i >= 2) && (j != 1))) {
-						printf("ERR: invalid pipe%d address length <%s>\n",
-							i, sb);
+				while ((sd = strsep(&sc, ":")) && (j < 5)) {
+					tmp = sscanf(sd, "%x", &digit);
+					if (tmp != 1) {
+						printf("ERR: invalid pipe%d address entry <%s>\n",
+								i, sd);
 						exit(-1);
 					}
 
-					i++;
+					if (digit > 0xff) {
+						printf("ERR: invalid pipe%d address <%s>\n",
+								i, sb);
+						exit(-1);
+					}
+
+					pipe_addr[i][j] = digit;
+					j++;
 				}
-				break;
-			case 'c':
-				channel = atoi(optarg);
-				if ((channel < 0) || (channel > 127)) {
-					printf("ERR: invalid channel %d\n", channel);
+
+				/* data pipes 1-5 share 4 most significant bytes */
+				if (((i < 2) && (j != 5)) || ((i >= 2) && (j != 1))) {
+					printf("ERR: invalid pipe%d address length <%s>\n",
+						i, sb);
 					exit(-1);
 				}
-				break;
-			case 'r':
-				rate = atoi(optarg);
-				if ((rate < 0) || (rate > 2)) {
-					printf("ERR: invalid rate %d\n", rate);
-					exit(-1);
-				}
-				break;
-			case 'e':
-				crc = atoi(optarg);
-				if ((crc < 0) || (crc > 2)) {
-					printf("ERR: invalid CRC mode %d\n", crc);
-					exit(-1);
-				}
-				break;
-			case 'p':
-				power = atoi(optarg);
-				if ((power < 0) || (power > 3)) {
-					printf("ERR: invalid power %d\n", power);
-					exit(-1);
-				}
-				break;
-			case '0':
-				dynamic_payload = true;
-				break;
-			case '1':
-				recv_length = atoi(optarg);
-				if ((recv_length < 1) || (recv_length > 32)) {
-					printf("ERR: invalid static payload length %d\n", recv_length);
-					exit(-1);
-				}
-				break;
-			case '2':
-				parse_message = true;
-				break;
-			case 'h':
-			default:
-				nrf24_test_usage(argv[0]);
-				exit(0);
+
+				i++;
+			}
+			break;
+		case '1':
+			parse_message = true;
+			break;
+		case 'h':
+		default:
+			nrf24_test_usage(argv[0]);
+			exit(0);
 		}
 	}
+
+	/* validate radio settings */
+
+	cfg_radio_dump(&rconf);
+	rc = cfg_radio_validate(&rconf);
+	if (rc < 0) {
+		printf("ERR: invalid radio config\n");
+		exit(-1);
+	}
+
+	cfg_platform_dump(&pconf);
 
 	/* setup nRF24 driver */
 
 	pnrf = &nrf;
 	memset(pnrf, 0x0, sizeof(*pnrf));
 
-	if (0 > nrf24_driver_setup(pnrf, spidev_name)) {
+	if (0 > nrf24_driver_setup(pnrf, (void *)&pconf)) {
 		printf("ERR: can't setup driver for nrf24 radio\n");
 		exit(-1);
 	}
@@ -230,15 +209,15 @@ int main(int argc, char *argv[])
 
 	/* */
 
-	if (dynamic_payload)
+	if (cfg_payload_is_dynamic(&rconf))
 		rf24_enable_dyn_payload(pnrf);
 	else
-		rf24_set_payload_size(pnrf, recv_length);
+		rf24_set_payload_size(pnrf, rconf.payload);
 
-	rf24_set_channel(pnrf, channel);
-	rf24_set_data_rate(pnrf, rate);
-	rf24_set_crc_mode(pnrf, crc);
-	rf24_set_pa_level(pnrf, power);
+	rf24_set_channel(pnrf, rconf.channel);
+	rf24_set_data_rate(pnrf, rconf.rate);
+	rf24_set_crc_mode(pnrf, rconf.crc);
+	rf24_set_pa_level(pnrf, rconf.pwr);
 
 	for (i = 0; i < 6; i++) {
 		if (pipe_en[i]) {
@@ -276,7 +255,7 @@ int main(int argc, char *argv[])
 		printf("INFO: data ready in pipe 0x%02x\n", pipe);
 		memset(recv_buffer, 0x0, sizeof(recv_buffer));
 
-		if (dynamic_payload) {
+		if (rf24_is_dyn_payload(pnrf)) {
 			recv_length = (int)rf24_get_dyn_payload_size(pnrf);
 			if (recv_length == 0xff) {
 				printf("WARN: failed to get dynamic payload length\n");

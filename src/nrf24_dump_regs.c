@@ -8,6 +8,8 @@
 
 #include "nRF24L01.h"
 #include "RF24.h"
+
+#include "config.h"
 #include "drv.h"
 
 /* */
@@ -414,9 +416,9 @@ void nrf24_dump_usage(char *name)
 {
 	int i;
 
-	printf("usage: %s [-h] -d <spidev> <cmd> <cmd args>\n", name);
+	printf("usage: %s [-h] -c <config> <cmd> <cmd args>\n", name);
 	printf("%-30s%s\n", "-h, --help", "this help message");
-	printf("%-30s%s\n", "-d, --device <spidev>", "spidev for nRF24x, default is '/dev/spidev0.0");
+	printf("%-30s%s\n", "-c, --config </path/to/config/file>", "config file");
 	printf("commands:\n");
 
 	for (i = 0; i < sizeof(commands) / sizeof(struct cmd_handler); i++)
@@ -431,29 +433,56 @@ int main(int argc, char *argv[])
 	struct rf24 *pnrf;
 	struct rf24 nrf;
 
-	char *spidev = "/dev/spidev0.0";
+	struct cfg_platform pconf = {0};
+	struct cfg_radio rconf = {0};
+	char *config_name = NULL;
+
 	char *cmd;
+	int rc;
 	int i;
 
 	int opt;
-	const char opts[] = "d:h";
+	const char opts[] = "c:h";
 	const struct option longopts[] = {
-		{"device", required_argument, NULL, 'd'},
+		{"config", required_argument, NULL, 'c'},
 		{"help", no_argument, NULL, 'h'},
 		{NULL,}
 	};
+
+	/* use sane config defaults */
+
+	cfg_radio_init(&rconf);
+	cfg_platform_init(&pconf);
+
 
 	/* parse command line */
 
 	while (opt = getopt_long(argc, argv, opts, longopts, &opt), opt > 0) {
 		switch (opt) {
-			case 'd':
-				spidev = strdup(optarg);
-				break;
-			case 'h':
-			default:
-				nrf24_dump_usage(argv[0]);
-				exit(0);
+		case 'c':
+			config_name = strdup(optarg);
+			rc = cfg_from_file(config_name);
+			if (rc < 0) {
+				printf("ERR: failed to parse config\n");
+				exit(-1);
+			}
+
+			rc = cfg_radio_read(&rconf);
+			if (rc < 0) {
+				printf("ERR: failed to get radio config\n");
+				exit(-1);
+			}
+
+			rc = cfg_platform_read(&pconf);
+			if (rc < 0) {
+				printf("ERR: failed to get platform config\n");
+				exit(-1);
+			}
+			break;
+		case 'h':
+		default:
+			nrf24_dump_usage(argv[0]);
+			exit(0);
 		}
 	}
 
@@ -462,12 +491,23 @@ int main(int argc, char *argv[])
 		exit(0);
 	}
 
+	/* validate radio settings */
+
+	cfg_radio_dump(&rconf);
+	rc = cfg_radio_validate(&rconf);
+	if (rc < 0) {
+		printf("ERR: invalid radio config\n");
+		exit(-1);
+	}
+
+	cfg_platform_dump(&pconf);
+
 	/* setup nRF24L01 */
 
 	pnrf = &nrf;
 	memset(pnrf, 0x0, sizeof(*pnrf));
 
-	if (0 > nrf24_driver_setup(pnrf, spidev)) {
+	if (0 > nrf24_driver_setup(pnrf, (void *)&pconf)) {
 		printf("ERR: can't setup gpio\n");
 		exit(-1);
 	}

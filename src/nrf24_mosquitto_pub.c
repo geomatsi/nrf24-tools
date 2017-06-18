@@ -39,16 +39,10 @@ static struct rf24 nrf;
 
 void nrf24_test_usage(char *name)
 {
-	printf("usage: %s [-h] -d <spidev>\n", name);
+	printf("usage: %s [-h] -c /path/to/config\n", name);
 	printf("%-30s%s\n", "-h, --help", "this help message");
-	printf("%-30s%s\n", "-C, --config </path/to/config/file>", "config file");
+	printf("%-30s%s\n", "-c, --config </path/to/config/file>", "config file");
 	printf("%-30s%s\n", "-a, --address <addrs>", "PRX pipes addresses in the form XX:XX:XX:XX:XX[,XX:XX:XX:XX:XX[,XX[,XX[,XX[,XX]]]]]");
-	printf("%-30s%s\n", "-d, --device <spidev>", "spidev for nRF24L01, default is '/dev/spidev0.0");
-	printf("%-30s%s\n", "-c, --channel <num>", "set channel number: 0 .. 127");
-	printf("%-30s%s\n", "-r, --rate <rate>", "set data rate: 0(1M), 1(2M), 2(250K)");
-	printf("%-30s%s\n", "-e, --crc <mode>", "set CRC encoding scheme: 0(none), 1 (8 bits), 2(16 bits)");
-	printf("%-30s%s\n", "-p, --power <level>", "set TX output power: 0(-18dBm), 1(-12dBm), 2(-6dBm), 3(0dBm)");
-	printf("%-30s%s\n", "--payload-length <length>", "0 - dynamic payload, 1 .. 32 - static payload length");
 	printf("%-30s%s\n", "--publish-message", "publish messages to MQTT broker");
 }
 
@@ -141,31 +135,23 @@ int main(int argc, char *argv[])
 	/* command line options */
 
 	int opt;
-	const char opts[] = "a:e:p:r:c:d:C:h";
+	const char opts[] = "a:c:h";
 	const struct option longopts[] = {
-		{"config", required_argument, NULL, 'C'},
+		{"config", required_argument, NULL, 'c'},
 		{"address", required_argument, NULL, 'a'},
-		{"device", required_argument, NULL, 'd'},
-		{"channel", required_argument, NULL, 'c'},
-		{"rate", required_argument, NULL, 'r'},
-		{"crc", required_argument, NULL, 'e'},
-		{"power", required_argument, NULL, 'p'},
-		{"payload-length", required_argument, NULL, '1'},
-		{"publish-message", no_argument, NULL, '2'},
+		{"publish-message", no_argument, NULL, '1'},
 		{"help", optional_argument, NULL, 'h'},
 		{NULL,}
 	};
 
 	/* use sane config defaults */
+
 	cfg_radio_init(&rconf);
 	cfg_platform_init(&pconf);
 
 	while (opt = getopt_long(argc, argv, opts, longopts, &opt), opt > 0) {
 		switch (opt) {
-		case 'd':
-			pconf.spidev = strdup(optarg);
-			break;
-		case 'C':
+		case 'c':
 			config_name = strdup(optarg);
 			rc = cfg_from_file(config_name);
 			if (rc < 0) {
@@ -222,22 +208,7 @@ int main(int argc, char *argv[])
 				i++;
 			}
 		break;
-		case 'c':
-			rconf.channel = atoi(optarg);
-			break;
-		case 'r':
-			rconf.rate = atoi(optarg);
-			break;
-		case 'e':
-			rconf.crc = atoi(optarg);
-			break;
-		case 'p':
-			rconf.pwr = atoi(optarg);
-			break;
 		case '1':
-			rconf.payload = atoi(optarg);
-			break;
-		case '2':
 			publish_message = true;
 			break;
 		case 'h':
@@ -282,7 +253,7 @@ int main(int argc, char *argv[])
 		exit(-1);
 	}
 
-	/* setup SPI and GPIO */
+	/* setup nRF24 driver */
 
 	pnrf = &nrf;
 	memset(pnrf, 0x0, sizeof(*pnrf));

@@ -86,15 +86,15 @@ endif ()
 ## executable targets
 
 if (WITH_NRF24_TEST_PTX)
-	add_executable( nrf24_test_ptx src/nrf24_test_ptx.c ${CONN_SRCS})
+	add_executable( nrf24_test_ptx src/nrf24_test_ptx.c ${CONN_SRCS} ${CONF_SRCS})
 endif ()
 
 if (WITH_NRF24_TEST_PRX)
-	add_executable( nrf24_test_prx src/nrf24_test_prx.c ${CONN_SRCS})
+	add_executable( nrf24_test_prx src/nrf24_test_prx.c ${CONN_SRCS} ${CONF_SRCS})
 endif ()
 
 if (WITH_NRF24_DUMP_REGS)
-	add_executable( nrf24_dump_regs src/nrf24_dump_regs.c ${CONN_SRCS})
+	add_executable( nrf24_dump_regs src/nrf24_dump_regs.c ${CONN_SRCS} ${CONF_SRCS})
 endif ()
 
 if (WITH_NRF24_TEST_HUB)
@@ -102,7 +102,7 @@ if (WITH_NRF24_TEST_HUB)
 	add_executable(
 		nrf24_test_hub
 		src/nrf24_test_hub.c
-		${CONN_SRCS} ${PROTO_SRCS} ${PROTO_HDRS})
+		${CONN_SRCS} ${PROTO_SRCS} ${PROTO_HDRS} ${CONF_SRCS})
 endif ()
 
 if (WITH_NRF24_MOSQUITTO_PUB)
@@ -216,6 +216,10 @@ endif ()
 if (WITH_NRF24_TEST_PTX)
 	target_link_libraries(nrf24_test_ptx ${NRF24_LIBRARY})
 
+	if (WITH_JSON_CONFIG)
+		target_link_libraries(nrf24_test_ptx ${JSON_LIBRARY})
+	endif ()
+
 	if ( NRF24_CONN STREQUAL "UM232H" )
 		target_link_libraries(nrf24_test_ptx ${FTDI_LIBRARY})
 	endif ()
@@ -223,6 +227,10 @@ endif ()
 
 if (WITH_NRF24_TEST_PRX)
 	target_link_libraries(nrf24_test_prx ${NRF24_LIBRARY})
+
+	if (WITH_JSON_CONFIG)
+		target_link_libraries(nrf24_test_prx ${JSON_LIBRARY})
+	endif ()
 
 	if ( NRF24_CONN STREQUAL "UM232H" )
 		target_link_libraries(nrf24_test_prx ${FTDI_LIBRARY})
@@ -232,6 +240,10 @@ endif ()
 if (WITH_NRF24_DUMP_REGS)
 	target_link_libraries(nrf24_dump_regs ${NRF24_LIBRARY})
 
+	if (WITH_JSON_CONFIG)
+		target_link_libraries(nrf24_dump_regs ${JSON_LIBRARY})
+	endif ()
+
 	if ( NRF24_CONN STREQUAL "UM232H" )
 		target_link_libraries(nrf24_dump_regs ${FTDI_LIBRARY})
 	endif ()
@@ -240,6 +252,10 @@ endif ()
 if (WITH_NRF24_TEST_HUB)
 	target_link_libraries(nrf24_test_hub ${PROTOBUFC_LIBRARIES})
 	target_link_libraries(nrf24_test_hub ${NRF24_LIBRARY})
+
+	if (WITH_JSON_CONFIG)
+		target_link_libraries(nrf24_test_hub ${JSON_LIBRARY})
+	endif ()
 
 	if ( NRF24_CONN STREQUAL "UM232H" )
 		target_link_libraries(nrf24_test_hub ${FTDI_LIBRARY})
