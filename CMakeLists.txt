@@ -18,7 +18,6 @@ option (WITH_NRF24_TEST_PRX "Build nRF24L01 PRX test tool" ON)
 option (WITH_NRF24_TEST_HUB "Build nRF24L01 PRX MultiCeiver test tool" ON)
 option (WITH_NRF24_DUMP_REGS "Build nRF24L01 register dump tool" ON)
 option (WITH_NRF24_MOSQUITTO_PUB "Build nRF24L01 mosquitto publisher" ON)
-option (WITH_SERIAL_MOSQUITTO_TEST "Build serial port mosquitto test publisher" OFF)
 option (WITH_JSON_CONFIG "JSON config support" ON)
 option (WITH_UNIT_TESTS "Build unit tests" OFF)
 
@@ -113,12 +112,6 @@ if (WITH_NRF24_MOSQUITTO_PUB)
 		${CONN_SRCS} ${PROTO_SRCS} ${PROTO_HDRS} ${CONF_SRCS})
 endif ()
 
-if (WITH_SERIAL_MOSQUITTO_TEST)
-	add_executable(
-		serial_mosquitto_test
-		src/serial_mosquitto_test.c)
-endif ()
-
 ## find headers
 
 FIND_PATH(NRF24_INCLUDE_DIR
@@ -190,10 +183,6 @@ if ( NRF24_CONN STREQUAL "UM232H" )
 endif ()
 
 if (WITH_NRF24_MOSQUITTO_TEST)
-	include_directories(${MOSQUITTO_INCLUDE_DIR})
-endif ()
-
-if (WITH_SERIAL_MOSQUITTO_TEST)
 	include_directories(${MOSQUITTO_INCLUDE_DIR})
 endif ()
 
@@ -274,10 +263,6 @@ if (WITH_NRF24_MOSQUITTO_PUB)
 	if ( NRF24_CONN STREQUAL "UM232H" )
 		target_link_libraries(nrf24_mosquitto_pub ${FTDI_LIBRARY})
 	endif ()
-endif ()
-
-if (WITH_SERIAL_MOSQUITTO_TEST)
-	target_link_libraries(serial_mosquitto_test ${MOSQUITTO_LIBRARY})
 endif ()
 
 ## tests
