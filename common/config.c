@@ -35,8 +35,6 @@ int cfg_from_file(const char *path)
 
 int cfg_from_string(const char *buffer)
 {
-	memset(cfg_txt, 0x0, sizeof(cfg_txt));
-
 	if (!buffer) {
 		printf("null input string\n");
 		return -1;
