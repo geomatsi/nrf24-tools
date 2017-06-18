@@ -39,10 +39,10 @@ static uint8_t f_spi_xfer(uint8_t data)
 
 /* */
 
-int nrf24_driver_setup(struct rf24 *pnrf, char *spidev)
+int nrf24_driver_setup(struct rf24 *pnrf, void *data)
 {
 	/* um232 gets device by USB Vendor ID and Product ID */
-	(void) spidev;
+	(void) data;
 
 	/* rf24 ops */
 
