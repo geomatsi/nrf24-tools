@@ -13,10 +13,9 @@ int spi_open(char *spidev)
 	printf("open spi device %s\n", spidev);
 
 	fd = open(spidev, O_RDWR);
-	if (fd < 0)
-	{
+	if (fd < 0) {
 		perror("can't open device");
-		return -errno;
+		return -1;
 	}
 
 	return 0;
@@ -29,31 +28,27 @@ int spi_init(uint32_t speed, uint8_t mode, uint8_t bits, uint8_t lsb)
 	printf("init spi device\n");
 
 	ret = ioctl(fd, SPI_IOC_WR_MODE, &mode);
-	if (ret == -1)
-	{
+	if (ret == -1) {
 		perror("can't set spi mode");
-		return -errno;
+		return -1;
 	}
 
 	ret = ioctl(fd, SPI_IOC_WR_LSB_FIRST, &lsb);
-	if (ret == -1)
-	{
+	if (ret == -1) {
 		perror("can't set bit order");
-		return -errno;
+		return -1;
 	}
 
 	ret = ioctl(fd, SPI_IOC_WR_BITS_PER_WORD, &bits);
-	if (ret == -1)
-	{
+	if (ret == -1) {
 		perror("can't set bits per word");
-		return -errno;
+		return -1;
 	}
 
 	ret = ioctl(fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed);
-	if (ret == -1)
-	{
+	if (ret == -1) {
 		perror("can't set max speed hz");
-		return -errno;
+		return -1;
 	}
 
 	return 0;
@@ -63,37 +58,32 @@ int spi_info(void)
 {
 	uint8_t m, b, o;
 	uint32_t s;
-
 	int ret;
 
 	printf("get spi device info\n");
 
 	ret = ioctl(fd, SPI_IOC_RD_MODE, &m);
-	if (ret == -1)
-	{
+	if (ret == -1) {
 		perror("can't read spi mode");
-		return -errno;
+		return -1;
 	}
 
 	ret = ioctl(fd, SPI_IOC_RD_LSB_FIRST, &o);
-	if (ret == -1)
-	{
+	if (ret == -1) {
 		perror("can't read bit order");
-		return -errno;
+		return -1;
 	}
 
 	ret = ioctl(fd, SPI_IOC_RD_BITS_PER_WORD, &b);
-	if (ret == -1)
-	{
+	if (ret == -1) {
 		perror("can't read bits per word");
-		return -errno;
+		return -1;
 	}
 
 	ret = ioctl(fd, SPI_IOC_RD_MAX_SPEED_HZ, &s);
-	if (ret == -1)
-	{
+	if (ret == -1) {
 		perror("can't read max speed hz");
-		return -errno;
+		return -1;
 	}
 
 	printf("spi setup: mode = %u lsb = %u bits = %u speed = %u Hz\n",
@@ -116,8 +106,7 @@ uint8_t spi_xfer_fdx(uint8_t txdata)
 	xfer[0].len = 1;
 
 	ret = ioctl(fd, SPI_IOC_MESSAGE(1), xfer);
-	if (ret < 0)
-	{
+	if (ret < 0) {
 		perror("can't perform spi transfer");
 		return rxdata;
 	}
@@ -138,8 +127,7 @@ int spi_xfer_mfdx(uint8_t *txbuf, uint8_t *rxbuf, int len)
 	xfer[0].len = len;
 
 	ret = ioctl(fd, SPI_IOC_MESSAGE(1), xfer);
-	if (ret < 0)
-	{
+	if (ret < 0) {
 		perror("can't perform spi transfer");
 		return ret;
 	}
@@ -163,8 +151,7 @@ uint8_t spi_xfer_hdx(uint8_t txdata)
 	xfer[1].len = 1;
 
 	ret = ioctl(fd, SPI_IOC_MESSAGE(2), xfer);
-	if (ret < 0)
-	{
+	if (ret < 0) {
 		perror("can't perform spi transfer");
 		return rxdata;
 	}
