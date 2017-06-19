@@ -29,7 +29,7 @@ $ ninja
 $ ninja test
 ```
 
-### SBC connector
+## Build with SBC backend
 
 ```bash
 $ mkdir build && cd build
