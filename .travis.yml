@@ -1,0 +1,54 @@
+dist: trusty
+language: c
+
+before_install:
+
+# setup toolchains
+- sudo apt-add-repository 'deb http://archive.ubuntu.com/ubuntu trusty main universe multiverse restricted'
+- sudo apt-get update -qq
+- sudo apt-get install -y cmake
+- sudo apt-get install -y libftdi1 libftdi-dev
+- sudo apt-get install -y libjson-c-dev libjson-c2
+- sudo apt-get install -y protobuf-compiler protobuf-c-compiler libprotobuf-dev
+
+# setup mosquitto-1.4.10
+- wget http://mosquitto.org/files/source/mosquitto-1.4.10.tar.gz
+- tar xzf mosquitto-1.4.10.tar.gz
+- cd mosquitto-1.4.10
+- cmake .
+- make && sudo make install
+- cd ../
+
+# setup cpputest v3.8
+- git clone git://github.com/cpputest/cpputest.git -b v3.8
+- cd cpputest
+- ./autogen.sh
+- ./configure
+- make && sudo make install
+- cd ../
+
+# setup libnrf24
+- git clone git://github.com/geomatsi/libnrf24.git
+- cd libnrf24
+- make && sudo make install
+- cd ../
+
+before_script:
+# prepare cmake build environment
+- mkdir build
+- cd build
+
+script:
+# UM232 backend: build and run unit tests
+- cmake .. -DWITH_UNIT_TESTS=ON -DNRF24_CONN='UM232H'
+- make
+- make test
+- make clean
+
+# SBC backend: build and run unit tests
+- cmake .. -DKERNEL_DIR=/usr -DWITH_UNIT_TESTS=ON -DNRF24_CONN='SBC'
+- make
+- make test
+- make clean
+
+install: true
