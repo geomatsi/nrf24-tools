@@ -6,6 +6,7 @@
 
 #include <RF24.h>
 
+#define DEFAULT_CONFIG	"/etc/nrf24/default.cfg"
 #define MAX_CONFIG_SIZE	4096
 
 /* common cfg ops */

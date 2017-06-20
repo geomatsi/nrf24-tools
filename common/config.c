@@ -13,6 +13,8 @@ int cfg_from_file(const char *path)
 	FILE *fp;
 	int ret;
 
+	printf("config=%s\n", path);
+
 	if (!path) {
 		printf("null config path\n");
 		return -1;

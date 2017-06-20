@@ -435,7 +435,7 @@ int main(int argc, char *argv[])
 
 	struct cfg_platform pconf = {0};
 	struct cfg_radio rconf = {0};
-	char *config_name = NULL;
+	char *config_name = DEFAULT_CONFIG;
 
 	char *cmd;
 	int rc;
@@ -461,23 +461,6 @@ int main(int argc, char *argv[])
 		switch (opt) {
 		case 'c':
 			config_name = strdup(optarg);
-			rc = cfg_from_file(config_name);
-			if (rc < 0) {
-				printf("ERR: failed to parse config\n");
-				exit(-1);
-			}
-
-			rc = cfg_radio_read(&rconf);
-			if (rc < 0) {
-				printf("ERR: failed to get radio config\n");
-				exit(-1);
-			}
-
-			rc = cfg_platform_read(&pconf);
-			if (rc < 0) {
-				printf("ERR: failed to get platform config\n");
-				exit(-1);
-			}
 			break;
 		case 'h':
 		default:
@@ -491,16 +474,34 @@ int main(int argc, char *argv[])
 		exit(0);
 	}
 
-	/* validate radio settings */
+	/* read and validate config */
 
+	rc = cfg_from_file(config_name);
+	if (rc < 0) {
+		printf("ERR: failed to parse config\n");
+		exit(-1);
+	}
+
+	rc = cfg_radio_read(&rconf);
+	if (rc < 0) {
+		printf("ERR: failed to get radio config\n");
+		exit(-1);
+	}
+
+	rc = cfg_platform_read(&pconf);
+	if (rc < 0) {
+		printf("ERR: failed to get platform config\n");
+		exit(-1);
+	}
+
+	cfg_platform_dump(&pconf);
 	cfg_radio_dump(&rconf);
+
 	rc = cfg_radio_validate(&rconf);
 	if (rc < 0) {
 		printf("ERR: invalid radio config\n");
 		exit(-1);
 	}
-
-	cfg_platform_dump(&pconf);
 
 	/* setup nRF24L01 */
 

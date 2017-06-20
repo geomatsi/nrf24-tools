@@ -90,23 +90,6 @@ int main(int argc, char *argv[])
 			break;
 		case 'c':
 			config_name = strdup(optarg);
-			rc = cfg_from_file(config_name);
-			if (rc < 0) {
-				printf("ERR: failed to parse config\n");
-				exit(-1);
-			}
-
-			rc = cfg_radio_read(&rconf);
-			if (rc < 0) {
-				printf("ERR: failed to get radio config\n");
-				exit(-1);
-			}
-
-			rc = cfg_platform_read(&pconf);
-			if (rc < 0) {
-				printf("ERR: failed to get platform config\n");
-				exit(-1);
-			}
 			break;
 		case 'm':
 			memcpy(send_buffer, optarg, sizeof(send_buffer) - 1);
@@ -118,16 +101,34 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	/* validate radio settings */
+	/* read and validate config */
 
+	rc = cfg_from_file(config_name);
+	if (rc < 0) {
+		printf("ERR: failed to parse config\n");
+		exit(-1);
+	}
+
+	rc = cfg_radio_read(&rconf);
+	if (rc < 0) {
+		printf("ERR: failed to get radio config\n");
+		exit(-1);
+	}
+
+	rc = cfg_platform_read(&pconf);
+	if (rc < 0) {
+		printf("ERR: failed to get platform config\n");
+		exit(-1);
+	}
+
+	cfg_platform_dump(&pconf);
 	cfg_radio_dump(&rconf);
+
 	rc = cfg_radio_validate(&rconf);
 	if (rc < 0) {
 		printf("ERR: invalid radio config\n");
 		exit(-1);
 	}
-
-	cfg_platform_dump(&pconf);
 
 	/* setup nRF24 driver */
 
