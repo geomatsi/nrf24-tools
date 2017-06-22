@@ -32,6 +32,21 @@ TEST(conf, test_rconf_default)
 	CHECK_EQUAL(0, cfg_radio_validate(&rconf));
 }
 
+TEST(conf, test_rconf_check_default)
+{
+	struct cfg_radio rconf;
+
+	cfg_radio_init(&rconf);
+	cfg_radio_dump(&rconf);
+
+	CHECK_EQUAL(32, rconf.payload);
+	CHECK_EQUAL(10, rconf.channel);
+	CHECK_EQUAL(0, rconf.rate);
+	CHECK_EQUAL(2, rconf.crc);
+	CHECK_EQUAL(3, rconf.pwr);
+	MEMCMP_EQUAL(pipe1_addr, rconf.addr1, sizeof(pipe1_addr));
+}
+
 TEST(conf, test_rconf_simple_ok)
 {
 	struct cfg_radio rconf = {0};

@@ -5,6 +5,12 @@
 
 #include "config.h"
 
+/* */
+
+uint8_t pipe1_addr[PIPE_ADDR_SIZE] = { 0xE1, 0xE1, 0xE1, 0xE1, 0xE1 };
+
+/* */
+
 static char cfg_txt[MAX_CONFIG_SIZE] = {0};
 static json_object *cfg_obj = NULL;
 
