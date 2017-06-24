@@ -26,21 +26,14 @@ TEST_GROUP(conf)
 	}
 };
 
-TEST(conf, test_rconf_check_default_sanity)
-{
-	struct cfg_radio rconf = {0};
-
-	cfg_radio_init(&rconf);
-
-	CHECK_EQUAL(0, cfg_radio_validate(&rconf));
-}
-
 TEST(conf, test_rconf_check_default_values)
 {
 	struct cfg_radio rconf;
 
 	cfg_radio_init(&rconf);
 	cfg_radio_dump(&rconf);
+
+	CHECK_EQUAL(0, cfg_radio_validate(&rconf));
 
 	CHECK_EQUAL(32, rconf.payload);
 	CHECK_EQUAL(10, rconf.channel);
@@ -79,7 +72,7 @@ TEST(conf, test_rconf_basic)
 	CHECK_EQUAL(3, rconf.pwr);
 }
 
-TEST(conf, test_rconf_simple_full)
+TEST(conf, test_rconf_advanced)
 {
 	struct cfg_radio rconf = {0};
 
@@ -121,6 +114,85 @@ TEST(conf, test_rconf_simple_full)
 	CHECK_EQUAL(0xe6, rconf.pipe6);
 }
 
+TEST(conf, test_rconf_err_basic)
+{
+	struct cfg_radio rconf = {0};
+
+	const char jconf[] = "			\
+		{				\
+			\"radio\": {		\
+				\"payload\": 33,\
+				\"channel\": 1,	\
+				\"rate\": 1,	\
+				\"crc\": 2,	\
+				\"pwr\": 3,	\
+			}			\
+		}";
+
+	CHECK_EQUAL(0, cfg_from_string(jconf));
+	CHECK_EQUAL(0, cfg_radio_read(&rconf));
+	CHECK_FALSE(0 == cfg_radio_validate(&rconf));
+}
+
+TEST(conf, test_rconf_err_addr_byte)
+{
+	struct cfg_radio rconf = {0};
+
+	const char jconf[] = "							\
+		{								\
+			\"radio\": {						\
+				\"pipe1\": \"0xaaa:0xb1:0xc1:0xd1:0xe1\",	\
+			}							\
+		}";
+
+	CHECK_EQUAL(0, cfg_from_string(jconf));
+	CHECK_FALSE(0 == cfg_radio_read(&rconf));
+}
+
+TEST(conf, test_rconf_err_addr_one_byte)
+{
+	struct cfg_radio rconf = {0};
+
+	const char jconf[] = "							\
+		{								\
+			\"radio\": {						\
+				\"pipe3\": \"0xaaa\",				\
+			}							\
+		}";
+
+	CHECK_EQUAL(0, cfg_from_string(jconf));
+	CHECK_FALSE(0 == cfg_radio_read(&rconf));
+}
+
+TEST(conf, test_rconf_err_addr_format)
+{
+	struct cfg_radio rconf = {0};
+
+	const char jconf[] = "							\
+		{								\
+			\"radio\": {						\
+				\"pipe1\": \"0xaa|0xbb|0xcc\",			\
+			}							\
+		}";
+
+	CHECK_EQUAL(0, cfg_from_string(jconf));
+	CHECK_FALSE(0 == cfg_radio_read(&rconf));
+}
+
+TEST(conf, test_rconf_err_addr_too_short)
+{
+	struct cfg_radio rconf = {0};
+
+	const char jconf[] = "							\
+		{								\
+			\"radio\": {						\
+				\"pipe1\": \"0xa1:0xb1:0xc1:0xd1\",		\
+			}							\
+		}";
+
+	CHECK_EQUAL(0, cfg_from_string(jconf));
+	CHECK_FALSE(0 == cfg_radio_read(&rconf));
+}
 
 TEST(conf, test_pconf_name_ok)
 {

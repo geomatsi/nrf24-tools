@@ -65,8 +65,7 @@ static int cfg_parse_pipe_addr_long(const char *saddr, uint8_t **paddr, const ch
 	int tmp;
 
 	tmp = sscanf(saddr, "%x:%x:%x:%x:%x",
-			&addr[0], &addr[1], &addr[2],
-			&addr[3], &addr[4]);
+			&addr[0], &addr[1], &addr[2], &addr[3], &addr[4]);
 
 	if (tmp != 5) {
 		printf("ERR: invalid %s entry: [%s]\n", tag, saddr);
@@ -81,6 +80,7 @@ static int cfg_parse_pipe_addr_long(const char *saddr, uint8_t **paddr, const ch
 	}
 
 	*paddr = malloc(PIPE_ADDR_SIZE);
+
 	for(int i = 0; i < PIPE_ADDR_SIZE; i++)
 		*(*paddr + i) = addr[i];
 
@@ -102,8 +102,6 @@ static int cfg_parse_pipe_addr_short(const char *saddr, uint8_t *paddr, const ch
 	*paddr = digit;
 	return 0;
 }
-
-
 
 int cfg_radio_read(struct cfg_radio *c)
 {
