@@ -45,6 +45,13 @@ static inline int cfg_from_string(const char *buf)
 #define RADIO_TAG_CRC	"crc"
 #define RADIO_TAG_PWR	"pwr"
 
+#define RADIO_TAG_PIPE1	"pipe1"
+#define RADIO_TAG_PIPE2	"pipe2"
+#define RADIO_TAG_PIPE3	"pipe3"
+#define RADIO_TAG_PIPE4	"pipe4"
+#define RADIO_TAG_PIPE5	"pipe5"
+#define RADIO_TAG_PIPE6	"pipe6"
+
 struct cfg_radio {
 	/* payload 0 .. 32, 0 for dynamic payload */
 	uint8_t payload;
@@ -52,12 +59,12 @@ struct cfg_radio {
 	uint8_t rate;
 	uint8_t crc;
 	uint8_t pwr;
-	uint8_t *addr1;
-	uint8_t *addr2;
-	uint8_t addr3;
-	uint8_t addr4;
-	uint8_t addr5;
-	uint8_t addr6;
+	uint8_t *pipe1;
+	uint8_t *pipe2;
+	uint8_t pipe3;
+	uint8_t pipe4;
+	uint8_t pipe5;
+	uint8_t pipe6;
 };
 
 static inline bool cfg_payload_is_dynamic(struct cfg_radio *c)
@@ -77,7 +84,7 @@ static inline void cfg_radio_init(struct cfg_radio *c)
 	c->rate = RF24_RATE_MIN;
 	c->crc = RF24_CRC_MAX;
 	c->pwr = RF24_PA_MAX;
-	c->addr1 = &pipe1_addr[0];
+	c->pipe1 = pipe1_addr;
 }
 
 static inline int cfg_radio_validate(const struct cfg_radio *c)
@@ -105,9 +112,9 @@ static inline void cfg_radio_dump(const struct cfg_radio *c)
 	printf("rconf: payload[%d] channel[%d] rate[%d] crc[%d] pwr[%d]\n",
 		c->payload, c->channel, c->rate, c->crc, c->pwr);
 
-	if (c->addr1)
-		printf("pconf: addr1[0x%02x:0x%02x:0x%02x:0x%02x:0x%02x]\n",
-			c->addr1[0], c->addr1[1], c->addr1[2], c->addr1[3], c->addr1[4]);
+	if (c->pipe1)
+		printf("pconf: pipe1[0x%02x:0x%02x:0x%02x:0x%02x:0x%02x]\n",
+			c->pipe1[0], c->pipe1[1], c->pipe1[2], c->pipe1[3], c->pipe1[4]);
 	else
 		printf("pconf: addr1[(null)]\n");
 }
