@@ -9,10 +9,11 @@
 #define DEFAULT_CONFIG	"/etc/nrf24/default.cfg"
 #define MAX_CONFIG_SIZE	4096
 #define PIPE_ADDR_SIZE	5
+#define PIPE_MAX_NUM	6
 
 /* */
 
-extern uint8_t pipe1_addr[PIPE_ADDR_SIZE];
+extern uint8_t pipe0_addr[PIPE_ADDR_SIZE];
 
 /* common cfg ops */
 
@@ -45,12 +46,12 @@ static inline int cfg_from_string(const char *buf)
 #define RADIO_TAG_CRC	"crc"
 #define RADIO_TAG_PWR	"pwr"
 
+#define RADIO_TAG_PIPE0	"pipe0"
 #define RADIO_TAG_PIPE1	"pipe1"
 #define RADIO_TAG_PIPE2	"pipe2"
 #define RADIO_TAG_PIPE3	"pipe3"
 #define RADIO_TAG_PIPE4	"pipe4"
 #define RADIO_TAG_PIPE5	"pipe5"
-#define RADIO_TAG_PIPE6	"pipe6"
 
 struct cfg_radio {
 	/* payload 0 .. 32, 0 for dynamic payload */
@@ -59,12 +60,7 @@ struct cfg_radio {
 	uint8_t rate;
 	uint8_t crc;
 	uint8_t pwr;
-	uint8_t *pipe1;
-	uint8_t *pipe2;
-	uint8_t pipe3;
-	uint8_t pipe4;
-	uint8_t pipe5;
-	uint8_t pipe6;
+	uint8_t *pipe[PIPE_MAX_NUM];
 };
 
 static inline bool cfg_payload_is_dynamic(struct cfg_radio *c)
@@ -84,7 +80,7 @@ static inline void cfg_radio_init(struct cfg_radio *c)
 	c->rate = RF24_RATE_MIN;
 	c->crc = RF24_CRC_MAX;
 	c->pwr = RF24_PA_MAX;
-	c->pipe1 = pipe1_addr;
+	c->pipe[0] = pipe0_addr;
 }
 
 static inline int cfg_radio_validate(const struct cfg_radio *c)
@@ -112,11 +108,16 @@ static inline void cfg_radio_dump(const struct cfg_radio *c)
 	printf("rconf: payload[%d] channel[%d] rate[%d] crc[%d] pwr[%d]\n",
 		c->payload, c->channel, c->rate, c->crc, c->pwr);
 
-	if (c->pipe1)
-		printf("pconf: pipe1[0x%02x:0x%02x:0x%02x:0x%02x:0x%02x]\n",
-			c->pipe1[0], c->pipe1[1], c->pipe1[2], c->pipe1[3], c->pipe1[4]);
-	else
-		printf("pconf: addr1[(null)]\n");
+	for (int i = 0; i < PIPE_MAX_NUM; i++) {
+		if (c->pipe[i]) {
+			printf("rconf: pipe%d[0x%02x:0x%02x:0x%02x:0x%02x:0x%02x]\n", i,
+				c->pipe[i][0], c->pipe[i][1], c->pipe[i][2],
+				c->pipe[i][3], c->pipe[i][4]);
+		} else {
+			printf("rconf: pipe[%d](null)\n", i);
+		}
+	}
+
 }
 
 #ifdef WITH_JSON_CONFIG

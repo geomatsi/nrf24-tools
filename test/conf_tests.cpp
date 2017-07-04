@@ -12,8 +12,12 @@ extern "C" {
 
 TEST_GROUP(conf)
 {
-	uint8_t pipe1[PIPE_ADDR_SIZE] = { 0xa1, 0xb1, 0xc1, 0xd1, 0xe1 };
-	uint8_t pipe2[PIPE_ADDR_SIZE] = { 0xa2, 0xb2, 0xc2, 0xd2, 0xe2 };
+	uint8_t pipe0[PIPE_ADDR_SIZE] = { 0xa1, 0xb1, 0xc1, 0xd1, 0xe1 };
+	uint8_t pipe1[PIPE_ADDR_SIZE] = { 0xa2, 0xb2, 0xc2, 0xd2, 0xe2 };
+	uint8_t pipe2[PIPE_ADDR_SIZE] = { 0xa2, 0xb2, 0xc2, 0xd2, 0xe3 };
+	uint8_t pipe3[PIPE_ADDR_SIZE] = { 0xa2, 0xb2, 0xc2, 0xd2, 0xe4 };
+	uint8_t pipe4[PIPE_ADDR_SIZE] = { 0xa2, 0xb2, 0xc2, 0xd2, 0xe5 };
+	uint8_t pipe5[PIPE_ADDR_SIZE] = { 0xa2, 0xb2, 0xc2, 0xd2, 0xe6 };
 
 	void setup()
 	{
@@ -31,7 +35,6 @@ TEST(conf, test_rconf_check_default_values)
 	struct cfg_radio rconf;
 
 	cfg_radio_init(&rconf);
-	cfg_radio_dump(&rconf);
 
 	CHECK_EQUAL(0, cfg_radio_validate(&rconf));
 
@@ -41,7 +44,7 @@ TEST(conf, test_rconf_check_default_values)
 	CHECK_EQUAL(2, rconf.crc);
 	CHECK_EQUAL(3, rconf.pwr);
 
-	MEMCMP_EQUAL(pipe1_addr, rconf.pipe1, sizeof(pipe1_addr));
+	MEMCMP_EQUAL(pipe0_addr, rconf.pipe[0], sizeof(pipe0_addr));
 }
 
 TEST(conf, test_rconf_basic)
@@ -63,8 +66,6 @@ TEST(conf, test_rconf_basic)
 	CHECK_EQUAL(0, cfg_radio_read(&rconf));
 	CHECK_EQUAL(0, cfg_radio_validate(&rconf));
 
-	cfg_radio_dump(&rconf);
-
 	CHECK_EQUAL(0, rconf.payload);
 	CHECK_EQUAL(1, rconf.channel);
 	CHECK_EQUAL(1, rconf.rate);
@@ -84,12 +85,12 @@ TEST(conf, test_rconf_advanced)
 				\"rate\": 1,					\
 				\"crc\": 2,					\
 				\"pwr\": 3,					\
-				\"pipe1\": \"0xa1:0xb1:0xc1:0xd1:0xe1\",	\
-				\"pipe2\": \"0xa2:0xb2:0xc2:0xd2:0xe2\",	\
-				\"pipe3\": \"0xe3\",				\
-				\"pipe4\": \"0xe4\",				\
-				\"pipe5\": \"0xe5\",				\
-				\"pipe6\": \"0xe6\",				\
+				\"pipe0\": \"0xa1:0xb1:0xc1:0xd1:0xe1\",	\
+				\"pipe1\": \"0xa2:0xb2:0xc2:0xd2:0xe2\",	\
+				\"pipe2\": \"0xe3\",				\
+				\"pipe3\": \"0xe4\",				\
+				\"pipe4\": \"0xe5\",				\
+				\"pipe5\": \"0xe6\",				\
 			}							\
 		}";
 
@@ -97,21 +98,91 @@ TEST(conf, test_rconf_advanced)
 	CHECK_EQUAL(0, cfg_radio_read(&rconf));
 	CHECK_EQUAL(0, cfg_radio_validate(&rconf));
 
-	cfg_radio_dump(&rconf);
-
 	CHECK_EQUAL(0, rconf.payload);
 	CHECK_EQUAL(1, rconf.channel);
 	CHECK_EQUAL(1, rconf.rate);
 	CHECK_EQUAL(2, rconf.crc);
 	CHECK_EQUAL(3, rconf.pwr);
 
-	MEMCMP_EQUAL(pipe1, rconf.pipe1, PIPE_ADDR_SIZE);
-	MEMCMP_EQUAL(pipe2, rconf.pipe2, PIPE_ADDR_SIZE);
+	MEMCMP_EQUAL(pipe0, rconf.pipe[0], PIPE_ADDR_SIZE);
+	MEMCMP_EQUAL(pipe1, rconf.pipe[1], PIPE_ADDR_SIZE);
+	MEMCMP_EQUAL(pipe2, rconf.pipe[2], PIPE_ADDR_SIZE);
+	MEMCMP_EQUAL(pipe3, rconf.pipe[3], PIPE_ADDR_SIZE);
+	MEMCMP_EQUAL(pipe4, rconf.pipe[4], PIPE_ADDR_SIZE);
+	MEMCMP_EQUAL(pipe5, rconf.pipe[5], PIPE_ADDR_SIZE);
+}
 
-	CHECK_EQUAL(0xe3, rconf.pipe3);
-	CHECK_EQUAL(0xe4, rconf.pipe4);
-	CHECK_EQUAL(0xe5, rconf.pipe5);
-	CHECK_EQUAL(0xe6, rconf.pipe6);
+TEST(conf, test_rconf_aux_addr_ok)
+{
+	struct cfg_radio rconf = {0};
+
+	const char jconf[] = "							\
+		{								\
+			\"radio\": {						\
+				\"pipe0\": \"0xa1:0xb1:0xc1:0xd1:0xe1\",	\
+				\"pipe1\": \"0xa2:0xb2:0xc2:0xd2:0xe2\",	\
+				\"pipe2\": \"0xe3\",				\
+			}							\
+		}";
+
+	CHECK_EQUAL(0, cfg_from_string(jconf));
+	CHECK_EQUAL(0, cfg_radio_read(&rconf));
+
+	MEMCMP_EQUAL(pipe0, rconf.pipe[0], PIPE_ADDR_SIZE);
+	MEMCMP_EQUAL(pipe1, rconf.pipe[1], PIPE_ADDR_SIZE);
+	MEMCMP_EQUAL(pipe2, rconf.pipe[2], PIPE_ADDR_SIZE);
+
+	for (int i = 3; i < PIPE_MAX_NUM; i++)
+		CHECK_EQUAL(0, rconf.pipe[i]);
+}
+
+TEST(conf, test_rconf_aux_addr_null)
+{
+	struct cfg_radio rconf = {0};
+
+	const char jconf[] = "							\
+		{								\
+			\"radio\": {						\
+				\"pipe0\": \"0xa1:0xb1:0xc1:0xd1:0xe1\",	\
+				\"pipe3\": \"0xaa\",				\
+				\"pipe4\": \"0xbb\",				\
+			}							\
+		}";
+
+	CHECK_EQUAL(0, cfg_from_string(jconf));
+	CHECK_EQUAL(0, cfg_radio_read(&rconf));
+
+	MEMCMP_EQUAL(pipe0, rconf.pipe[0], PIPE_ADDR_SIZE);
+
+	for (int i = 1; i < PIPE_MAX_NUM; i++)
+		CHECK_EQUAL(0, rconf.pipe[i]);
+}
+
+TEST(conf, test_rconf_aux_addr_order)
+{
+	struct cfg_radio rconf = {0};
+
+	const char jconf[] = "							\
+		{								\
+			\"radio\": {						\
+				\"pipe0\": \"0xa1:0xb1:0xc1:0xd1:0xe1\",	\
+				\"pipe2\": \"0xe3\",				\
+				\"pipe1\": \"0xa2:0xb2:0xc2:0xd2:0xe2\",	\
+				\"pipe3\": \"0xe4\",				\
+				\"pipe4\": \"0xe5\",				\
+				\"pipe5\": \"0xe6\",				\
+			}							\
+		}";
+
+	CHECK_EQUAL(0, cfg_from_string(jconf));
+	CHECK_EQUAL(0, cfg_radio_read(&rconf));
+
+	MEMCMP_EQUAL(pipe0, rconf.pipe[0], PIPE_ADDR_SIZE);
+	MEMCMP_EQUAL(pipe1, rconf.pipe[1], PIPE_ADDR_SIZE);
+	CHECK_EQUAL(0, rconf.pipe[2]);
+	MEMCMP_EQUAL(pipe3, rconf.pipe[3], PIPE_ADDR_SIZE);
+	MEMCMP_EQUAL(pipe4, rconf.pipe[4], PIPE_ADDR_SIZE);
+	MEMCMP_EQUAL(pipe5, rconf.pipe[5], PIPE_ADDR_SIZE);
 }
 
 TEST(conf, test_rconf_err_basic)
@@ -141,22 +212,7 @@ TEST(conf, test_rconf_err_addr_byte)
 	const char jconf[] = "							\
 		{								\
 			\"radio\": {						\
-				\"pipe1\": \"0xaaa:0xb1:0xc1:0xd1:0xe1\",	\
-			}							\
-		}";
-
-	CHECK_EQUAL(0, cfg_from_string(jconf));
-	CHECK_FALSE(0 == cfg_radio_read(&rconf));
-}
-
-TEST(conf, test_rconf_err_addr_one_byte)
-{
-	struct cfg_radio rconf = {0};
-
-	const char jconf[] = "							\
-		{								\
-			\"radio\": {						\
-				\"pipe3\": \"0xaaa\",				\
+				\"pipe0\": \"0xaaa:0xb1:0xc1:0xd1:0xe1\",	\
 			}							\
 		}";
 
@@ -208,8 +264,6 @@ TEST(conf, test_pconf_name_ok)
 	CHECK_EQUAL(0, cfg_from_string(jconf));
 	CHECK_EQUAL(0, cfg_platform_read(&pconf));
 
-	cfg_platform_dump(&pconf);
-
 	STRCMP_EQUAL("a", pconf.name);
 }
 
@@ -232,8 +286,6 @@ TEST(conf, test_pconf_spidev_ok)
 
 	CHECK_EQUAL(0, cfg_from_string(jconf));
 	CHECK_EQUAL(0, cfg_platform_read(&pconf));
-
-	cfg_platform_dump(&pconf);
 
 	STRCMP_EQUAL("a", pconf.spidev);
 	CHECK_EQUAL(100, pconf.speed);
@@ -260,8 +312,6 @@ TEST(conf, test_pconf_gpio_ok)
 
 	CHECK_EQUAL(0, cfg_from_string(jconf));
 	CHECK_EQUAL(0, cfg_platform_read(&pconf));
-
-	cfg_platform_dump(&pconf);
 
 	STRCMP_EQUAL("a", pconf.pin_ce_name);
 	CHECK_EQUAL(100, pconf.pin_ce);
@@ -295,8 +345,6 @@ TEST(conf, test_pconf_complete_ok)
 
 	CHECK_EQUAL(0, cfg_from_string(jconf));
 	CHECK_EQUAL(0, cfg_platform_read(&pconf));
-
-	cfg_platform_dump(&pconf);
 
 	STRCMP_EQUAL("test", pconf.name);
 

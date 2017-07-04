@@ -7,7 +7,7 @@
 
 /* */
 
-uint8_t pipe1_addr[PIPE_ADDR_SIZE] = { 0xE1, 0xE1, 0xE1, 0xE1, 0xE1 };
+uint8_t pipe0_addr[PIPE_ADDR_SIZE] = { 0xE1, 0xE1, 0xE1, 0xE1, 0xE1 };
 
 /* */
 
@@ -87,10 +87,12 @@ static int cfg_parse_pipe_addr_long(const char *saddr, uint8_t **paddr, const ch
 	return 0;
 }
 
-static int cfg_parse_pipe_addr_short(const char *saddr, uint8_t *paddr, const char *tag)
+static int cfg_parse_pipe_addr_short(const char *saddr, uint8_t *maddr,
+					uint8_t **paddr, const char *tag)
 {
 	unsigned int digit;
 	int tmp;
+	int i;
 
 	tmp = sscanf(saddr, "%x", &digit);
 
@@ -99,7 +101,15 @@ static int cfg_parse_pipe_addr_short(const char *saddr, uint8_t *paddr, const ch
 		return -1;
 	}
 
-	*paddr = digit;
+	*paddr = malloc(PIPE_ADDR_SIZE);
+
+	/* first 4 bytes are the same as maddr (pipe1) */
+	for(i = 0; i < PIPE_ADDR_SIZE - 1; i++)
+		*(*paddr + i) = maddr[i];
+
+	/* last byte differs */
+	*(*paddr + i) = digit;
+
 	return 0;
 }
 
@@ -126,52 +136,58 @@ int cfg_radio_read(struct cfg_radio *c)
 		type = json_object_get_type(iter.val);
 
 		if (type == json_type_string) {
+			if (!strcmp(iter.key, RADIO_TAG_PIPE0)) {
+				saddr = json_object_get_string(iter.val);
+
+				ret = cfg_parse_pipe_addr_long(saddr, &c->pipe[0], RADIO_TAG_PIPE0);
+				if (ret < 0)
+					return ret;
+			}
+
 			if (!strcmp(iter.key, RADIO_TAG_PIPE1)) {
 				saddr = json_object_get_string(iter.val);
 
-				ret = cfg_parse_pipe_addr_long(saddr, &c->pipe1, RADIO_TAG_PIPE1);
+				ret = cfg_parse_pipe_addr_long(saddr, &c->pipe[1], RADIO_TAG_PIPE1);
 				if (ret < 0)
 					return ret;
 			}
 
-			if (!strcmp(iter.key, RADIO_TAG_PIPE2)) {
-				saddr = json_object_get_string(iter.val);
+			if (c->pipe[1]) {
+				if (!strcmp(iter.key, RADIO_TAG_PIPE2)) {
+					saddr = json_object_get_string(iter.val);
 
-				ret = cfg_parse_pipe_addr_long(saddr, &c->pipe2, RADIO_TAG_PIPE2);
-				if (ret < 0)
-					return ret;
-			}
+					ret = cfg_parse_pipe_addr_short(saddr, c->pipe[1],
+							&c->pipe[2], RADIO_TAG_PIPE2);
+					if (ret < 0)
+						return ret;
+				}
 
-			if (!strcmp(iter.key, RADIO_TAG_PIPE3)) {
-				saddr = json_object_get_string(iter.val);
+				if (!strcmp(iter.key, RADIO_TAG_PIPE3)) {
+					saddr = json_object_get_string(iter.val);
 
-				ret = cfg_parse_pipe_addr_short(saddr, &c->pipe3, RADIO_TAG_PIPE3);
-				if (ret < 0)
-					return ret;
-			}
+					ret = cfg_parse_pipe_addr_short(saddr, c->pipe[1],
+							&c->pipe[3], RADIO_TAG_PIPE3);
+					if (ret < 0)
+						return ret;
+				}
 
-			if (!strcmp(iter.key, RADIO_TAG_PIPE4)) {
-				saddr = json_object_get_string(iter.val);
+				if (!strcmp(iter.key, RADIO_TAG_PIPE4)) {
+					saddr = json_object_get_string(iter.val);
 
-				ret = cfg_parse_pipe_addr_short(saddr, &c->pipe4, RADIO_TAG_PIPE4);
-				if (ret < 0)
-					return ret;
-			}
+					ret = cfg_parse_pipe_addr_short(saddr, c->pipe[1],
+							&c->pipe[4], RADIO_TAG_PIPE4);
+					if (ret < 0)
+						return ret;
+				}
 
-			if (!strcmp(iter.key, RADIO_TAG_PIPE5)) {
-				saddr = json_object_get_string(iter.val);
+				if (!strcmp(iter.key, RADIO_TAG_PIPE5)) {
+					saddr = json_object_get_string(iter.val);
 
-				ret = cfg_parse_pipe_addr_short(saddr, &c->pipe5, RADIO_TAG_PIPE5);
-				if (ret < 0)
-					return ret;
-			}
-
-			if (!strcmp(iter.key, RADIO_TAG_PIPE6)) {
-				saddr = json_object_get_string(iter.val);
-
-				ret = cfg_parse_pipe_addr_short(saddr, &c->pipe6, RADIO_TAG_PIPE6);
-				if (ret < 0)
-					return ret;
+					ret = cfg_parse_pipe_addr_short(saddr, c->pipe[1],
+							&c->pipe[5], RADIO_TAG_PIPE5);
+					if (ret < 0)
+						return ret;
+				}
 			}
 
 		}
