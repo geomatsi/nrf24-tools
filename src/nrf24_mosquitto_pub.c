@@ -49,7 +49,7 @@ void dump_data(uint8_t *b, int n)
 {
 	int p;
 
-	for(p = 0; p < n; p++) {
+	for (p = 0; p < n; p++) {
 		printf("0x%02x ", *(b + p));
 		if ((p > 0) && ((p % 64) == 0))
 			printf("\n");
@@ -228,7 +228,7 @@ int main(int argc, char *argv[])
 
 	for (int i = 0; i < PIPE_MAX_NUM; i++) {
 		if (rconf.pipe[i])
-			rf24_setup_prx(pnrf, 0, rconf.pipe[i]);
+			rf24_setup_prx(pnrf, i, rconf.pipe[i]);
 	}
 
 	rf24_start_prx(pnrf);
