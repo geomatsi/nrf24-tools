@@ -20,7 +20,6 @@ void nrf24_test_usage(char *name)
 {
 	printf("usage: %s [-h] -c /path/to/config\n", name);
 	printf("%-30s%s\n", "-h, --help", "this help message");
-	printf("%-30s%s\n", "-a, --address XX:XX:XX:XX:XX", "pipe 0 PRX address");
 	printf("%-30s%s\n", "-c, --config </path/to/config/file>", "config file");
 }
 
@@ -41,17 +40,12 @@ void dump_data(uint8_t *b, int n)
 
 int main(int argc, char *argv[])
 {
-	uint8_t addr[] = {0xE1, 0xE1, 0xE1, 0xE1, 0xE1};
 	enum rf24_rx_status ret;
 	uint8_t recv_buffer[32];
 	int recv_length = 32;
-	unsigned int digit;
 	struct rf24 *pnrf;
-	char *sa;
-	char *sb;
 	int pipe;
 	int tmp;
-	int i = 0;
 	int rc;
 
 	struct cfg_platform pconf = {0};
@@ -61,9 +55,8 @@ int main(int argc, char *argv[])
 	/* command line options */
 
 	int opt;
-	const char opts[] = "a:c:h";
+	const char opts[] = "c:h";
 	const struct option longopts[] = {
-		{"address", required_argument, NULL, 'a'},
 		{"config", required_argument, NULL, 'c'},
 		{"help", optional_argument, NULL, 'h'},
 		{NULL,}
@@ -76,24 +69,6 @@ int main(int argc, char *argv[])
 
 	while (opt = getopt_long(argc, argv, opts, longopts, &opt), opt > 0) {
 		switch (opt) {
-		case 'a':
-			sa = strdup(optarg);
-			while ((sb = strsep(&sa, ":")) && (i < 5)) {
-				tmp = sscanf(sb, "%x", &digit);
-				if (digit > 0xff) {
-					printf("ERR: invalid pipe address <%s>\n", optarg);
-					exit(-1);
-				}
-
-				addr[i++] = digit;
-			}
-
-			if (i != 5) {
-				printf("ERR: invalid pipe address length <%s>\n", optarg);
-				exit(-1);
-			}
-
-			break;
 		case 'c':
 			config_name = strdup(optarg);
 			break;
@@ -189,11 +164,15 @@ int main(int argc, char *argv[])
 
 	/* start PRX mode */
 
-	rf24_setup_prx(pnrf, 0x0 /* pipe number */, addr);
+	if (rconf.pipe[0]) {
+		rf24_setup_prx(pnrf, 0x0, rconf.pipe[0]);
+	} else {
+		printf("pipe0 addr is not set in configuration file\n");
+		exit(-1);
+	}
+
 	rf24_start_prx(pnrf);
 	rf24_print_status(pnrf);
-
-	printf("PRX addr %x:%x:%x:%x:%x\n", addr[0], addr[1], addr[2], addr[3], addr[4]);
 
 	/* */
 

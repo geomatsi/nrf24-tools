@@ -18,10 +18,9 @@ static struct rf24 nrf;
 
 void nrf24_test_usage(char *name)
 {
-	printf("usage: %s [-h] -m <message> -a <addr> -c /path/to/config\n", name);
+	printf("usage: %s [-h] -m <message> -c /path/to/config\n", name);
 	printf("%-30s%s\n", "-h, --help", "this help message");
 	printf("%-30s%s\n", "-m, --message <messge>", "set TX message");
-	printf("%-30s%s\n", "-a, --address XX:XX:XX:XX:XX", "pipe 0 PTX address");
 	printf("%-30s%s\n", "-c, --config </path/to/config/file>", "config file");
 }
 
@@ -29,16 +28,11 @@ void nrf24_test_usage(char *name)
 
 int main(int argc, char *argv[])
 {
-	uint8_t addr[] = {0xE1, 0xE1, 0xE1, 0xE1, 0xE1};
 	uint8_t send_buffer[32] = { 0 };
 	int send_length = 32;
 	enum rf24_tx_status ret;
-	unsigned int digit;
 	struct rf24 *pnrf;
-	char *sa;
-	char *sb;
 	int tmp;
-	int i = 0;
 	int rc;
 
 	struct cfg_platform pconf = {0};
@@ -48,17 +42,10 @@ int main(int argc, char *argv[])
 	/* command line options */
 
 	int opt;
-	const char opts[] = "a:m:e:p:r:c:d:h";
+	const char opts[] = "c:m:h";
 	const struct option longopts[] = {
-		{"address", required_argument, NULL, 'a'},
-		{"device", required_argument, NULL, 'd'},
-		{"channel", required_argument, NULL, 'c'},
-		{"rate", required_argument, NULL, 'r'},
-		{"crc", required_argument, NULL, 'e'},
-		{"power", required_argument, NULL, 'p'},
+		{"config", required_argument, NULL, 'c'},
 		{"message", required_argument, NULL, 'm'},
-		{"dynamic-payload", no_argument, NULL, '0'},
-		{"payload-length", required_argument, NULL, '1'},
 		{"help", optional_argument, NULL, 'h'},
 		{NULL,}
 	};
@@ -70,24 +57,6 @@ int main(int argc, char *argv[])
 
 	while (opt = getopt_long(argc, argv, opts, longopts, &opt), opt > 0) {
 		switch (opt) {
-		case 'a':
-			sa = strdup(optarg);
-			while ((sb = strsep(&sa, ":")) && (i < 5)) {
-				tmp = sscanf(sb, "%x", &digit);
-				if (digit > 0xff) {
-					printf("ERR: invalid pipe address <%s>\n", optarg);
-					exit(-1);
-				}
-
-				addr[i++] = digit;
-			}
-
-			if (i != 5) {
-				printf("ERR: invalid pipe address length <%s>\n", optarg);
-				exit(-1);
-			}
-
-			break;
 		case 'c':
 			config_name = strdup(optarg);
 			break;
@@ -145,8 +114,6 @@ int main(int argc, char *argv[])
 	rf24_init(pnrf);
 	rf24_print_status(pnrf);
 
-	printf("PTX ADDR %x:%x:%x:%x:%x\n", addr[0], addr[1], addr[2], addr[3], addr[4]);
-
 	/* modify default settings */
 
 	if (cfg_payload_is_dynamic(&rconf))
@@ -188,7 +155,13 @@ int main(int argc, char *argv[])
 
 	/* start PTX mode */
 
-	rf24_setup_ptx(pnrf, addr);
+	if (rconf.pipe[0]) {
+		rf24_setup_ptx(pnrf, rconf.pipe[0]);
+	} else {
+		printf("pipe0 addr is not set in configuration file\n");
+		exit(-1);
+	}
+
 	rf24_start_ptx(pnrf);
 	rf24_print_status(pnrf);
 
