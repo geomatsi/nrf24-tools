@@ -20,11 +20,10 @@ static struct rf24 nrf;
 
 void nrf24_test_usage(char *name)
 {
-	printf("usage: %s [-h] -c /path/to/config\n", name);
+	printf("usage: %s [-h] [-p] -c /path/to/config\n", name);
 	printf("%-30s%s\n", "-h, --help", "this help message");
 	printf("%-30s%s\n", "-c, --config /path/to/config/file", "config file");
-	printf("%-30s%s\n", "-a, --address <addrs>", "PRX pipes addresses in the form XX:XX:XX:XX:XX[,XX:XX:XX:XX:XX[,XX[,XX[,XX[,XX]]]]]");
-	printf("%-30s%s\n", "--parse-message", "parse messages according to protobuf description");
+	printf("%-30s%s\n", "-p, --parse-message", "parse messages according to protobuf description");
 }
 
 void dump_data(uint8_t *b, int n)
@@ -66,18 +65,6 @@ void decode_data(uint8_t *b, int n)
 
 int main(int argc, char *argv[])
 {
-	uint8_t pipe_addr[6][5] = {
-		{ 0xE1, 0xE1, 0xE1, 0xE1, 0xE1 },
-		{ 0x00, 0x00, 0x00, 0x00, 0x00 },
-		{ 0x00, 0x00, 0x00, 0x00, 0x00 },
-		{ 0x00, 0x00, 0x00, 0x00, 0x00 },
-		{ 0x00, 0x00, 0x00, 0x00, 0x00 },
-		{ 0x00, 0x00, 0x00, 0x00, 0x00 },
-	};
-
-	/* by default only the first pipe is enabled */
-	uint8_t pipe_en[6] = {1, 0, 0, 0, 0, 0};
-
 	bool parse_message = false;
 
 	uint8_t recv_buffer[32];
@@ -85,11 +72,8 @@ int main(int argc, char *argv[])
 	int recv_length = 32;
 	struct rf24 *pnrf;
 	int pipe;
-
-	char *sa, *sb, *sc, *sd;
-	unsigned int digit;
-	int i, j, tmp;
 	int rc;
+	int i;
 
 	struct cfg_platform pconf = {0};
 	struct cfg_radio rconf = {0};
@@ -98,11 +82,10 @@ int main(int argc, char *argv[])
 	/* command line options */
 
 	int opt;
-	const char opts[] = "a:c:h";
+	const char opts[] = "c:ph";
 	const struct option longopts[] = {
 		{"config", required_argument, NULL, 'c'},
-		{"address", required_argument, NULL, 'a'},
-		{"parse-message", no_argument, NULL, '1'},
+		{"parse-message", no_argument, NULL, 'p'},
 		{"help", optional_argument, NULL, 'h'},
 		{NULL,}
 	};
@@ -117,44 +100,7 @@ int main(int argc, char *argv[])
 		case 'c':
 			config_name = strdup(optarg);
 			break;
-		case 'a':
-			sa = strdup(optarg);
-			i = 0;
-
-			while ((sb = strsep(&sa, ",")) && (i < 6)) {
-				sc = strdup(sb);
-				pipe_en[i] = 1;
-				j = 0;
-
-				while ((sd = strsep(&sc, ":")) && (j < 5)) {
-					tmp = sscanf(sd, "%x", &digit);
-					if (tmp != 1) {
-						printf("ERR: invalid pipe%d address entry <%s>\n",
-								i, sd);
-						exit(-1);
-					}
-
-					if (digit > 0xff) {
-						printf("ERR: invalid pipe%d address <%s>\n",
-								i, sb);
-						exit(-1);
-					}
-
-					pipe_addr[i][j] = digit;
-					j++;
-				}
-
-				/* data pipes 1-5 share 4 most significant bytes */
-				if (((i < 2) && (j != 5)) || ((i >= 2) && (j != 1))) {
-					printf("ERR: invalid pipe%d address length <%s>\n",
-						i, sb);
-					exit(-1);
-				}
-
-				i++;
-			}
-			break;
-		case '1':
+		case 'p':
 			parse_message = true;
 			break;
 		case 'h':
@@ -220,19 +166,9 @@ int main(int argc, char *argv[])
 	rf24_set_crc_mode(pnrf, rconf.crc);
 	rf24_set_pa_level(pnrf, rconf.pwr);
 
-	for (i = 0; i < 6; i++) {
-		if (pipe_en[i]) {
-			/* for pipes 2-5 only last addr byte is passed */
-			rf24_setup_prx(pnrf, i, pipe_addr[i]);
-
-			/* data pipes 1-5 share 4 most significant bytes */
-			printf("enable pipe%d with address: %02x:%02x:%02x:%02x:%02x\n", i,
-				pipe_addr[(i < 2) ? i : 1][0],
-				pipe_addr[(i < 2) ? i : 1][1],
-				pipe_addr[(i < 2) ? i : 1][2],
-				pipe_addr[(i < 2) ? i : 1][3],
-				pipe_addr[i][(i < 2) ? 4 : 0]);
-		}
+	for (i = 0; i < PIPE_MAX_NUM; i++) {
+		if (rconf.pipe[i])
+			rf24_setup_prx(pnrf, 0, rconf.pipe[i]);
 	}
 
 	rf24_start_prx(pnrf);
