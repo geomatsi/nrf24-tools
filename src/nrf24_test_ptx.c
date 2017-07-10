@@ -61,7 +61,10 @@ int main(int argc, char *argv[])
 			config_name = strdup(optarg);
 			break;
 		case 'm':
-			memcpy(send_buffer, optarg, sizeof(send_buffer) - 1);
+			if (strlen(optarg) <= send_length)
+				send_length = strlen(optarg);
+
+			memcpy(send_buffer, optarg, send_length);
 			break;
 		case 'h':
 		default:
