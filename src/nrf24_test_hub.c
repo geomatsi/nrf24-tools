@@ -53,7 +53,7 @@ void decode_data(uint8_t *b, int n)
 
 	printf("node = %u\n", msg->node->node);
 	for (i = 0; i < msg->n_sensor; i++) {
-		printf("sensor[%u] = %u\n", msg->sensor[i]->type, msg->sensor[i]->data);
+		printf("sensor[0x%x] = %u\n", msg->sensor[i]->type, msg->sensor[i]->data);
 	}
 
 	node_sensor_list__free_unpacked(msg, NULL);
