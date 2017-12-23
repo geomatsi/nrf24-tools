@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION "2.8.0")
-project("nRF24 Tools")
+project("nRF24 Tools" C)
 
 ##
 
