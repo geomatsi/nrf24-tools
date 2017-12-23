@@ -232,6 +232,7 @@ endif ()
 ## tests
 
 if (WITH_UNIT_TESTS)
+	enable_language(CXX)
 	enable_testing()
 
 	add_executable(
