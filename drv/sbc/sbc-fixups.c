@@ -13,7 +13,7 @@ int pcduino_upstream_fixup(void)
 #define PCDUINO_RFM69_CSN	229
 #define PCDUINO_RFM69_CSN_NAME	"gpio229"
 
-	ret = gpio_setup(PCDUINO_RFM69_CSN, PCDUINO_RFM69_CSN_NAME, DIR_OUT);
+	ret = gpio_setup(PCDUINO_RFM69_CSN, PCDUINO_RFM69_CSN_NAME, DIR_OUT, EDGE_NONE);
 	if (ret)
 		goto out;
 
@@ -34,7 +34,7 @@ int pcduino_legacy_fixup(void)
 #define PCDUINO_LEGACY_RFM69_CSN	9
 #define PCDUINO_LEGACY_RFM69_CSN_NAME	"gpio9_ph5"
 
-	ret = gpio_setup(PCDUINO_LEGACY_RFM69_CSN, PCDUINO_LEGACY_RFM69_CSN_NAME, DIR_OUT);
+	ret = gpio_setup(PCDUINO_LEGACY_RFM69_CSN, PCDUINO_LEGACY_RFM69_CSN_NAME, DIR_OUT, EDGE_NONE);
 	if (ret)
 		goto out;
 

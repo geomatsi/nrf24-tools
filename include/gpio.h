@@ -19,7 +19,14 @@ enum {
 	DIR_OUT
 } gpio_dir_t;
 
-int gpio_setup(int port, char *name, int dir);
+enum {
+	EDGE_NONE	= 0,
+	EDGE_RISING	= 1,
+	EDGE_FALLING	= 2,
+	EDGE_BOTH	= 3,
+} gpio_edge_t;
+
+int gpio_setup(int port, char *name, int dir, int edge);
 int gpio_close(int port);
 
 int gpio_read(char *name);

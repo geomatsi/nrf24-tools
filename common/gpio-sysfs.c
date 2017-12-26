@@ -2,13 +2,13 @@
 
 /* */
 
-int gpio_setup(int port, char *name, int dir)
+int gpio_setup(int port, char *name, int dir, int edge)
 {
-	char gpio[128];
+	char gpio[128] = {0};
 	FILE *file;
 	int ret = 0;
 
-	printf("setup gpio=%d name=%s dir=%d\n", port, name, dir);
+	printf("setup gpio=%d name=[%s] dir=%d\n", port, name, dir);
 
 	file = fopen("/sys/class/gpio/export", "w");
 	if (!file) {
@@ -25,30 +25,68 @@ int gpio_setup(int port, char *name, int dir)
 	fclose(file);
 
 	sprintf(gpio, "/sys/class/gpio/%s/direction", name);
-
 	file = fopen(gpio, "w");
 	if (!file) {
 		perror("can't open gpio direction");
 		return -1;
 	}
 
-	if (dir == 0) {
-		ret = fprintf(file, "in\n");
-		if (ret < 0) {
-			perror("can't write gpio direction");
-			return -1;
-		}
+	switch (dir) {
+		case 0: /* input */
+			ret = fprintf(file, "in\n");
+			break;
+		case 1: /* output */
+			ret = fprintf(file, "out\n");
+			break;
+		default:
+			printf("unknown direction: %d\n", dir);
+			ret = -1;
+			break;
 	}
-	else
-	{
-		ret = fprintf(file, "out\n");
-		if (ret < 0) {
-			perror("can't write gpio direction");
-			return -1;
-		}
+
+	if (ret < 0) {
+		perror("can't write gpio direction");
+		return -1;
 	}
 
 	fclose(file);
+
+	/* for input pin: configure irq edge */
+	if (dir == 0) {
+		sprintf(gpio, "/sys/class/gpio/%s/edge", name);
+		file = fopen(gpio, "w");
+		if (!file) {
+			perror("can't open gpio edge");
+			return -1;
+		}
+
+		switch (edge) {
+			case 0: /* skip: none edge */
+				ret = 0;
+				break;
+			case 1: /* rising edge */
+				ret = fprintf(file, "rising\n");
+				break;
+			case 2: /* falling edge */
+				ret = fprintf(file, "falling\n");
+				break;
+			case 3: /* both edges */
+				ret = fprintf(file, "both\n");
+				break;
+			default:
+				printf("unknown edge: %d\n", edge);
+				ret = -1;
+				break;
+		}
+
+		if (ret < 0) {
+			perror("can't write gpio edge");
+			return -1;
+		}
+
+		fclose(file);
+	}
+
 	return 0;
 }
 
