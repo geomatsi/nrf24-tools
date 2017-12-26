@@ -86,6 +86,31 @@ static int f_spi_mb_xfer(uint8_t *tx, uint8_t *rx, int len)
 struct sbc_handler boards[] = {
 
 	/*
+	 * Orange Pi PC
+	 * Notes:
+	 *   - SPI h/w CSN line is used, no need to toggle GPIO line
+	 */
+	{
+
+		.name = "orange-pi-pc",
+		.desc = "Orange Pi PC",
+		.pin_ce_dflt = 71,
+		.pin_ce_name = "gpio71",
+		.pin_csn_dflt = 0,
+		.pin_csn_name = NULL,
+		.pin_irq_dflt = 2,
+		.pin_irq_edge_dflt = 1,
+		.pin_irq_name = "gpio2",
+		.delay_ms = f_delay_ms,
+		.delay_us = f_delay_us,
+		.csn = NULL,
+		.ce = f_ce,
+		.spi_sb_xfer = NULL,
+		.spi_mb_xfer = f_spi_mb_xfer,
+		.fixup = NULL,
+	},
+
+	/*
 	 * Orange Pi One
 	 * Notes:
 	 *   - SPI h/w CSN line is used, no need to toggle GPIO line
