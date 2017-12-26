@@ -294,7 +294,7 @@ TEST(conf, test_pconf_spidev_ok)
 	CHECK_EQUAL(1, pconf.lsb);
 }
 
-TEST(conf, test_pconf_gpio_ok)
+TEST(conf, test_pconf_gpio1_ok)
 {
 	struct cfg_platform pconf = {0};
 
@@ -306,6 +306,9 @@ TEST(conf, test_pconf_gpio_ok)
 					\"ce_gpio\": 100,	\
 					\"csn_name\": \"b\",	\
 					\"csn_gpio\": 200,	\
+					\"irq_name\": \"c\",	\
+					\"irq_gpio\": 300,	\
+					\"irq_edge\": 2,	\
 				},				\
 			},					\
 		}";
@@ -315,8 +318,13 @@ TEST(conf, test_pconf_gpio_ok)
 
 	STRCMP_EQUAL("a", pconf.pin_ce_name);
 	CHECK_EQUAL(100, pconf.pin_ce);
+
 	STRCMP_EQUAL("b", pconf.pin_csn_name);
 	CHECK_EQUAL(200, pconf.pin_csn);
+
+	STRCMP_EQUAL("c", pconf.pin_irq_name);
+	CHECK_EQUAL(2, pconf.pin_irq_edge);
+	CHECK_EQUAL(300, pconf.pin_irq);
 }
 
 TEST(conf, test_pconf_complete_ok)
@@ -356,6 +364,11 @@ TEST(conf, test_pconf_complete_ok)
 
 	STRCMP_EQUAL("pin1", pconf.pin_ce_name);
 	CHECK_EQUAL(100, pconf.pin_ce);
+
 	STRCMP_EQUAL("pin2", pconf.pin_csn_name);
 	CHECK_EQUAL(200, pconf.pin_csn);
+
+	STRCMP_EQUAL(NULL, pconf.pin_irq_name);
+	CHECK_EQUAL(0, pconf.pin_irq_edge);
+	CHECK_EQUAL(0, pconf.pin_irq);
 }

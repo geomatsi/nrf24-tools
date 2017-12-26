@@ -265,6 +265,15 @@ static int cfg_platform_gpio_read(struct cfg_platform *c, json_object *pobj)
 
 		if (!strcmp(iter.key, PLAT_TAG_GPIO_CSN))
 			c->pin_csn = json_object_get_int(iter.val);
+
+		if (!strcmp(iter.key, PLAT_TAG_GPIO_IRQ_NAME))
+			c->pin_irq_name = strdup(json_object_get_string(iter.val));
+
+		if (!strcmp(iter.key, PLAT_TAG_GPIO_IRQ_EDGE))
+			c->pin_irq_edge = json_object_get_int(iter.val);
+
+		if (!strcmp(iter.key, PLAT_TAG_GPIO_IRQ))
+			c->pin_irq = json_object_get_int(iter.val);
 	}
 
 	return 0;
