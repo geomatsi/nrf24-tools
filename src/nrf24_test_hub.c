@@ -65,6 +65,7 @@ void decode_data(uint8_t *b, int n)
 
 int main(int argc, char *argv[])
 {
+	struct nrf24_drv *pdrv;
 	bool parse_message = false;
 
 	uint8_t recv_buffer[32];
@@ -144,7 +145,8 @@ int main(int argc, char *argv[])
 	pnrf = &nrf;
 	memset(pnrf, 0x0, sizeof(*pnrf));
 
-	if (0 > nrf24_driver_setup(pnrf, (void *)&pconf)) {
+	pdrv = nrf24_driver_setup(pnrf, (void *)&pconf);
+	if (!pdrv) {
 		printf("ERR: can't setup driver for nrf24 radio\n");
 		exit(-1);
 	}
@@ -177,12 +179,22 @@ int main(int argc, char *argv[])
 	/* */
 
 	while (1) {
+		/* block for driver 'ready' event */
+		ret = nrf24_driver_wait_for(pdrv);
+		if (ret < 0) {
+			printf("ERR: driver wait failure\n");
+			exit(-1);
+		} else if (ret == 0) {
+			/* some interruption: try again */
+			continue;
+		} else {
+			/* ready to go */
+		}
 
-		while(!rf24_rx_ready(pnrf, &pipe))
-			usleep(100000);
+		if (!rf24_rx_ready(pnrf, &pipe))
+			continue;
 
 		ret = rf24_rx_pipe_check(pnrf, pipe);
-
 		if (ret != RF24_RX_OK) {
 			printf("WARN: pipe check error 0x%02x\n", (int)pipe);
 			rf24_flush_rx(pnrf);

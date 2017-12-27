@@ -31,6 +31,7 @@ int main(int argc, char *argv[])
 	uint8_t send_buffer[32] = { 0 };
 	int send_length = 32;
 	enum rf24_tx_status ret;
+	struct nrf24_drv *pdrv;
 	struct rf24 *pnrf;
 	int tmp;
 	int rc;
@@ -107,7 +108,8 @@ int main(int argc, char *argv[])
 	pnrf = &nrf;
 	memset(pnrf, 0x0, sizeof(*pnrf));
 
-	if (0 > nrf24_driver_setup(pnrf, (void *)&pconf)) {
+	pdrv = nrf24_driver_setup(pnrf, (void *)&pconf);
+	if (!pdrv) {
 		printf("ERR: can't setup driver for nrf24 radio\n");
 		exit(-1);
 	}

@@ -39,11 +39,22 @@ struct sbc_handler {
 	int	(*fixup)(void);
 };
 
+struct nrf24_drv_sbc {
+	char *name;
+	char *pin_ce_name;
+	char *pin_csn_name;
+	char *pin_irq_name;
+};
+
 /* */
 
-static char *pin_ce_name = NULL;
-static char *pin_csn_name = NULL;
-static char *pin_irq_name = NULL;
+struct nrf24_drv_sbc drv = {
+	.name = "sbc",
+
+	.pin_ce_name = NULL,
+	.pin_csn_name = NULL,
+	.pin_irq_name = NULL,
+};
 
 /* */
 
@@ -61,12 +72,12 @@ static void f_delay_us(int udelay)
 
 static void f_ce(int level)
 {
-	(void) gpio_write(pin_ce_name, level);
+	(void) gpio_write(drv.pin_ce_name, level);
 }
 
 static void f_csn(int level)
 {
-	(void) gpio_write(pin_csn_name, level);
+	(void) gpio_write(drv.pin_csn_name, level);
 }
 
 /* */
@@ -257,7 +268,7 @@ struct sbc_handler boards[] = {
 
 /* */
 
-int nrf24_driver_setup(struct rf24 *pnrf, void *data)
+struct nrf24_drv * nrf24_driver_setup(struct rf24 *pnrf, void *data)
 {
 	struct cfg_platform *pcfg = (struct cfg_platform *)data;
 	struct sbc_handler *board = NULL;
@@ -277,7 +288,7 @@ int nrf24_driver_setup(struct rf24 *pnrf, void *data)
 
 	if (!board) {
 		printf("ERR: can't find board\n");
-		return -ENOENT;
+		return NULL;
 	}
 
 	printf("Board: %s (%s)\n", board->name, board->desc);
@@ -301,7 +312,7 @@ int nrf24_driver_setup(struct rf24 *pnrf, void *data)
 			goto out;
 		}
 
-		pin_ce_name = strdup(pcfg->pin_ce_name);
+		drv.pin_ce_name = strdup(pcfg->pin_ce_name);
 
 	} else if (board->pin_ce_dflt && board->pin_ce_name) {
 		ret = gpio_setup(board->pin_ce_dflt, board->pin_ce_name, DIR_OUT, EDGE_NONE);
@@ -311,7 +322,7 @@ int nrf24_driver_setup(struct rf24 *pnrf, void *data)
 			goto out;
 		}
 
-		pin_ce_name = strdup(board->pin_ce_name);
+		drv.pin_ce_name = strdup(board->pin_ce_name);
 
 	} else {
 		/* CE is not needed */
@@ -327,7 +338,7 @@ int nrf24_driver_setup(struct rf24 *pnrf, void *data)
 			goto out;
 		}
 
-		pin_csn_name = strdup(pcfg->pin_csn_name);
+		drv.pin_csn_name = strdup(pcfg->pin_csn_name);
 
 	} else if (board->pin_csn_dflt && board->pin_csn_name) {
 		ret = gpio_setup(board->pin_csn_dflt, board->pin_csn_name, DIR_OUT, EDGE_NONE);
@@ -337,7 +348,7 @@ int nrf24_driver_setup(struct rf24 *pnrf, void *data)
 			goto out;
 		}
 
-		pin_csn_name = strdup(board->pin_csn_name);
+		drv.pin_csn_name = strdup(board->pin_csn_name);
 
 	} else {
 		/* CSN is not needed */
@@ -353,7 +364,7 @@ int nrf24_driver_setup(struct rf24 *pnrf, void *data)
 			goto out;
 		}
 
-		pin_irq_name = strdup(pcfg->pin_irq_name);
+		drv.pin_irq_name = strdup(pcfg->pin_irq_name);
 
 	} else if (board->pin_irq_dflt && board->pin_irq_name) {
 		ret = gpio_setup(board->pin_irq_dflt, board->pin_irq_name, DIR_IN, board->pin_irq_edge_dflt);
@@ -363,7 +374,7 @@ int nrf24_driver_setup(struct rf24 *pnrf, void *data)
 			goto out;
 		}
 
-		pin_irq_name = strdup(board->pin_irq_name);
+		drv.pin_irq_name = strdup(board->pin_irq_name);
 
 	} else {
 		/* IRQ is not needed */
@@ -396,5 +407,11 @@ int nrf24_driver_setup(struct rf24 *pnrf, void *data)
 	}
 
 out:
-	return ret;
+	return ret ? NULL : (struct nrf24_drv *)&drv;
+}
+
+int nrf24_driver_wait_for(struct nrf24_drv *pdrv)
+{
+	usleep(100000);
+	return 1;
 }

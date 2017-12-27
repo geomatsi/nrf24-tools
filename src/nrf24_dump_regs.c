@@ -430,6 +430,7 @@ void nrf24_dump_usage(char *name)
 
 int main(int argc, char *argv[])
 {
+	struct nrf24_drv *pdrv;
 	struct rf24 *pnrf;
 	struct rf24 nrf;
 
@@ -508,7 +509,8 @@ int main(int argc, char *argv[])
 	pnrf = &nrf;
 	memset(pnrf, 0x0, sizeof(*pnrf));
 
-	if (0 > nrf24_driver_setup(pnrf, (void *)&pconf)) {
+	pdrv = nrf24_driver_setup(pnrf, (void *)&pconf);
+	if (!pdrv) {
 		printf("ERR: can't setup gpio\n");
 		exit(-1);
 	}

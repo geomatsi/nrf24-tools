@@ -4,7 +4,18 @@
 
 /* */
 
-struct ftdi_context fc;
+struct nrf24_drv_sbc {
+	char *name;
+	struct ftdi_context fc;
+};
+
+/* */
+
+struct nrf24_drv_sbc drv = {
+	.name = "um232",
+
+	.fc = {0},
+};
 
 /* */
 
@@ -22,24 +33,24 @@ static void f_delay_us(int udelay)
 
 static void f_csn(int level)
 {
-	um232h_gpiol_set(&fc, BIT_L2, level);
+	um232h_gpiol_set(&drv.fc, BIT_L2, level);
 	return;
 }
 
 static void f_ce(int level)
 {
-	um232h_gpiol_set(&fc, BIT_L1, level);
+	um232h_gpiol_set(&drv.fc, BIT_L1, level);
 	return;
 }
 
 static uint8_t f_spi_xfer(uint8_t data)
 {
-	return um232h_spi_byte_xfer(&fc, data);
+	return um232h_spi_byte_xfer(&drv.fc, data);
 }
 
 /* */
 
-int nrf24_driver_setup(struct rf24 *pnrf, void *data)
+struct nrf24_drv * nrf24_driver_setup(struct rf24 *pnrf, void *data)
 {
 	/* um232 gets device by USB Vendor ID and Product ID */
 	(void) data;
@@ -55,9 +66,15 @@ int nrf24_driver_setup(struct rf24 *pnrf, void *data)
 
 	/* um232 init */
 
-	um232h_mpsse_simple_init(&fc);
-	um232h_set_loopback(&fc, 0);
-	um232h_set_speed(&fc, 100000);
+	um232h_mpsse_simple_init(&drv.fc);
+	um232h_set_loopback(&drv.fc, 0);
+	um232h_set_speed(&drv.fc, 100000);
 
-	return 0;
+	return (struct nrf24_drv *)&drv;
+}
+
+int nrf24_driver_wait_for(struct nrf24_drv *pdrv)
+{
+	usleep(100000);
+	return 1;
 }
