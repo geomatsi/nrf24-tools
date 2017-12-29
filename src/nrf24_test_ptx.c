@@ -22,6 +22,7 @@ void nrf24_test_usage(char *name)
 	printf("%-30s%s\n", "-h, --help", "this help message");
 	printf("%-30s%s\n", "-m, --message <messge>", "set TX message");
 	printf("%-30s%s\n", "-c, --config </path/to/config/file>", "config file");
+	printf("%-30s%s\n", "-p, --period <sec>", "delay between messages");
 }
 
 /* */
@@ -39,13 +40,15 @@ int main(int argc, char *argv[])
 	struct cfg_platform pconf = {0};
 	struct cfg_radio rconf = {0};
 	char *config_name = NULL;
+	int period = 1;
 
 	/* command line options */
 
 	int opt;
-	const char opts[] = "c:m:h";
+	const char opts[] = "p:c:m:h";
 	const struct option longopts[] = {
 		{"config", required_argument, NULL, 'c'},
+		{"period", required_argument, NULL, 'p'},
 		{"message", required_argument, NULL, 'm'},
 		{"help", optional_argument, NULL, 'h'},
 		{NULL,}
@@ -60,6 +63,11 @@ int main(int argc, char *argv[])
 		switch (opt) {
 		case 'c':
 			config_name = strdup(optarg);
+			break;
+		case 'p':
+			period = atoi(optarg);
+			if (period <= 0)
+				period = 1;
 			break;
 		case 'm':
 			if (strlen(optarg) <= send_length)
@@ -183,7 +191,7 @@ int main(int argc, char *argv[])
 			printf("written %d bytes\n", send_length);
 		}
 
-		sleep(1);
+		sleep(period);
 	}
 
 }
