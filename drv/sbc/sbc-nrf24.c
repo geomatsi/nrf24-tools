@@ -295,7 +295,6 @@ struct nrf24_drv * nrf24_driver_setup(struct rf24 *pnrf, void *data)
 
 	if (!board) {
 		printf("ERR: can't find board\n");
-		return NULL;
 	}
 
 	printf("Board: %s (%s)\n", board->name, board->desc);
@@ -450,6 +449,14 @@ out:
 
 int nrf24_driver_wait_for(struct nrf24_drv *pdrv)
 {
-	usleep(100000);
-	return 1;
+	int ret;
+
+	if (drv.pin_irq_name) {
+		ret = gpio_wait_for_irq(drv.pin_irq_name);
+	} else {
+		usleep(100000);
+		ret = 1;
+	}
+
+	return ret;
 }

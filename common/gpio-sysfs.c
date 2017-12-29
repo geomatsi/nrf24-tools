@@ -1,3 +1,7 @@
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/poll.h>
+
 #include "gpio.h"
 
 /* */
@@ -205,21 +209,75 @@ int gpio_write(char *name, int value)
 		goto out;
 	}
 
-	if (value == 0) {
-		ret = fprintf(file, "0\n");
-		if (ret < 0) {
-			perror("can't write 0 to gpio");
-			return -1;
-		}
-	} else {
-		ret = fprintf(file, "1\n");
-		if (ret < 0) {
-			perror("can't write 1 to gpio");
-			return -1;
+	ret = fprintf(file, "%d\n", value);
+	if (ret < 0) {
+		perror("ERR: can't write value to gpio");
+		goto out;
+	}
+
+out:
+	if (file)
+		fclose(file);
+
+	return (ret >= 0) ? 0 : ret;
+}
+
+int gpio_wait_for_irq(char *name)
+{
+	char gpio[128] = {0};
+	struct pollfd pollfd[1];
+	FILE *file;
+	int ret;
+	int val;
+
+	sprintf(gpio, "/sys/class/gpio/%s/value", name);
+	file = fopen(gpio, "r");
+	if (!file) {
+		perror("ERR: can't open gpio value for read");
+		ret = -1;
+		goto out;
+	}
+
+	/* read out before pollig !!! */
+	ret = fscanf(file, "%d", &val);
+	if (ret < 0) {
+		perror("ERR: fscanf before poll");
+		goto out;
+	}
+
+	pollfd[0].events = POLLPRI | POLLERR;
+	pollfd[0].fd = fileno(file);
+	pollfd[0].revents = 0;
+
+	ret = poll(pollfd, 1, 10000);
+	if (ret < 0) {
+		if (errno == EINTR){
+			ret = 0;
+			goto out;
+		} else {
+			perror("ERR: poll");
+			goto out;
 		}
 	}
 
-	fclose(file);
+	if (ret == 0)
+		goto out;
 
-	return 0;
+	ret = fseek(file, 0, SEEK_SET);
+	if (ret < 0) {
+		perror("ERR: fseek");
+		goto out;
+	}
+
+	ret = fscanf(file, "%d", &val);
+	if (ret < 0) {
+		perror("ERR: fscanf after poll");
+		goto out;
+	}
+
+out:
+	if (file)
+		fclose(file);
+
+	return ret;
 }

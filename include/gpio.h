@@ -33,5 +33,6 @@ int gpio_close(int port, char *name);
 
 int gpio_read(char *name);
 int gpio_write(char *name, int value);
+int gpio_wait_for_irq(char *name);
 
 #endif /* GPIO_HAL_H */
