@@ -28,6 +28,7 @@ struct sbc_handler {
 	char *pin_irq_name;
 	int pin_irq_dflt;
 	int pin_irq_edge_dflt;
+	int pin_irq_active_low_dflt;
 
 
 	void    (*delay_ms)(int);
@@ -109,9 +110,10 @@ struct sbc_handler boards[] = {
 		.pin_ce_name = "gpio71",
 		.pin_csn_dflt = 0,
 		.pin_csn_name = NULL,
-		.pin_irq_dflt = 2,
-		.pin_irq_edge_dflt = 1,
-		.pin_irq_name = "gpio2",
+		.pin_irq_dflt = 0,
+		.pin_irq_edge_dflt = 0,
+		.pin_irq_active_low_dflt = 0,
+		.pin_irq_name = NULL,
 		.delay_ms = f_delay_ms,
 		.delay_us = f_delay_us,
 		.csn = NULL,
@@ -136,6 +138,7 @@ struct sbc_handler boards[] = {
 		.pin_csn_name = NULL,
 		.pin_irq_dflt = 0,
 		.pin_irq_edge_dflt = 0,
+		.pin_irq_active_low_dflt = 0,
 		.pin_irq_name = NULL,
 		.delay_ms = f_delay_ms,
 		.delay_us = f_delay_us,
@@ -161,6 +164,7 @@ struct sbc_handler boards[] = {
 		.pin_csn_name = NULL,
 		.pin_irq_dflt = 0,
 		.pin_irq_edge_dflt = 0,
+		.pin_irq_active_low_dflt = 0,
 		.pin_irq_name = NULL,
 		.delay_ms = f_delay_ms,
 		.delay_us = f_delay_us,
@@ -186,6 +190,7 @@ struct sbc_handler boards[] = {
 		.pin_csn_name = "gpio234",
 		.pin_irq_dflt = 0,
 		.pin_irq_edge_dflt = 0,
+		.pin_irq_active_low_dflt = 0,
 		.pin_irq_name = NULL,
 		.delay_ms = f_delay_ms,
 		.delay_us = f_delay_us,
@@ -212,6 +217,7 @@ struct sbc_handler boards[] = {
 		.pin_csn_name = "gpio8_ph10",
 		.pin_irq_dflt = 0,
 		.pin_irq_edge_dflt = 0,
+		.pin_irq_active_low_dflt = 0,
 		.pin_irq_name = NULL,
 		.delay_ms = f_delay_ms,
 		.delay_us = f_delay_us,
@@ -255,6 +261,7 @@ struct sbc_handler boards[] = {
 		.pin_csn_name = "gpio49",
 		.pin_irq_dflt = 0,
 		.pin_irq_edge_dflt = 0,
+		.pin_irq_active_low_dflt = 0,
 		.pin_irq_name = NULL,
 		.delay_ms = f_delay_ms,
 		.delay_us = f_delay_us,
@@ -305,7 +312,7 @@ struct nrf24_drv * nrf24_driver_setup(struct rf24 *pnrf, void *data)
 	/* gpio: ce */
 
 	if (pcfg->pin_ce && pcfg->pin_ce_name) {
-		ret = gpio_setup(pcfg->pin_ce, pcfg->pin_ce_name, DIR_OUT, EDGE_NONE);
+		ret = gpio_setup(pcfg->pin_ce, pcfg->pin_ce_name, DIR_OUT);
 		if (ret) {
 			printf("ERR: pin setup failed for CE(%d, %s)\n",
 				pcfg->pin_ce, pcfg->pin_ce_name);
@@ -315,7 +322,7 @@ struct nrf24_drv * nrf24_driver_setup(struct rf24 *pnrf, void *data)
 		drv.pin_ce_name = strdup(pcfg->pin_ce_name);
 
 	} else if (board->pin_ce_dflt && board->pin_ce_name) {
-		ret = gpio_setup(board->pin_ce_dflt, board->pin_ce_name, DIR_OUT, EDGE_NONE);
+		ret = gpio_setup(board->pin_ce_dflt, board->pin_ce_name, DIR_OUT);
 		if (ret) {
 			printf("ERR: pin setup failed for CE(%d, %s)\n",
 				board->pin_ce_dflt, board->pin_ce_name);
@@ -331,7 +338,7 @@ struct nrf24_drv * nrf24_driver_setup(struct rf24 *pnrf, void *data)
 	/* gpio: csn */
 
 	if (pcfg->pin_csn && pcfg->pin_csn_name) {
-		ret = gpio_setup(pcfg->pin_csn, pcfg->pin_csn_name, DIR_OUT, EDGE_NONE);
+		ret = gpio_setup(pcfg->pin_csn, pcfg->pin_csn_name, DIR_OUT);
 		if (ret) {
 			printf("ERR: pin setup failed for CSN(%d, %s)\n",
 				pcfg->pin_csn, pcfg->pin_csn_name);
@@ -341,7 +348,7 @@ struct nrf24_drv * nrf24_driver_setup(struct rf24 *pnrf, void *data)
 		drv.pin_csn_name = strdup(pcfg->pin_csn_name);
 
 	} else if (board->pin_csn_dflt && board->pin_csn_name) {
-		ret = gpio_setup(board->pin_csn_dflt, board->pin_csn_name, DIR_OUT, EDGE_NONE);
+		ret = gpio_setup(board->pin_csn_dflt, board->pin_csn_name, DIR_OUT);
 		if (ret) {
 			printf("ERR: pin setup failed for CSN(%d, %s)\n",
 				board->pin_csn_dflt, board->pin_csn_name);
@@ -357,20 +364,51 @@ struct nrf24_drv * nrf24_driver_setup(struct rf24 *pnrf, void *data)
 	/* gpio: irq */
 
 	if (pcfg->pin_irq && pcfg->pin_irq_name) {
-		ret = gpio_setup(pcfg->pin_irq, pcfg->pin_irq_name, DIR_IN, pcfg->pin_irq_edge);
+		ret = gpio_setup(pcfg->pin_irq, pcfg->pin_irq_name, DIR_IN);
 		if (ret) {
-			printf("ERR: pin setup failed for IRQ(%d, %s, %d)\n",
+			printf("ERR: pin setup failed for IRQ(%d, %s)\n",
+				pcfg->pin_irq, pcfg->pin_irq_name);
+			goto out;
+		}
+
+		ret = gpio_edge(pcfg->pin_irq, pcfg->pin_irq_name, pcfg->pin_irq_edge);
+		if (ret) {
+			printf("ERR: pin edge setup failed for IRQ(%d, %s, %d)\n",
 				pcfg->pin_irq, pcfg->pin_irq_name, pcfg->pin_irq_edge);
+			goto out;
+		}
+
+		ret = gpio_active_low(pcfg->pin_irq, pcfg->pin_irq_name, pcfg->pin_irq_active_low);
+		if (ret) {
+			printf("ERR: pin active_low setup failed for IRQ(%d, %s, %d)\n",
+				pcfg->pin_irq, pcfg->pin_irq_name, pcfg->pin_irq_active_low);
 			goto out;
 		}
 
 		drv.pin_irq_name = strdup(pcfg->pin_irq_name);
 
 	} else if (board->pin_irq_dflt && board->pin_irq_name) {
-		ret = gpio_setup(board->pin_irq_dflt, board->pin_irq_name, DIR_IN, board->pin_irq_edge_dflt);
+		ret = gpio_setup(board->pin_irq_dflt, board->pin_irq_name, DIR_IN);
 		if (ret) {
-			printf("ERR: pin setup failed for IRQ(%d, %s, %d)\n",
-				board->pin_irq_dflt, board->pin_irq_name, board->pin_irq_edge_dflt);
+			printf("ERR: pin setup failed for IRQ(%d, %s)\n",
+				board->pin_irq_dflt, board->pin_irq_name);
+			goto out;
+		}
+
+		ret = gpio_edge(board->pin_irq_dflt, board->pin_irq_name, board->pin_irq_edge_dflt);
+		if (ret) {
+			printf("ERR: pin edge setup failed for IRQ(%d, %s, %d)\n",
+				board->pin_irq_dflt, board->pin_irq_name,
+				board->pin_irq_edge_dflt);
+			goto out;
+		}
+
+		ret = gpio_active_low(board->pin_irq_dflt, board->pin_irq_name,
+					board->pin_irq_active_low_dflt);
+		if (ret) {
+			printf("ERR: pin active_low setup failed for IRQ(%d, %s, %d)\n",
+				board->pin_irq_dflt, board->pin_irq_name,
+				board->pin_irq_active_low_dflt);
 			goto out;
 		}
 
