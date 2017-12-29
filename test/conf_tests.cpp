@@ -309,6 +309,7 @@ TEST(conf, test_pconf_gpio1_ok)
 					\"irq_name\": \"c\",	\
 					\"irq_gpio\": 300,	\
 					\"irq_edge\": 2,	\
+					\"irq_active_low\": 1,	\
 				},				\
 			},					\
 		}";
@@ -325,6 +326,7 @@ TEST(conf, test_pconf_gpio1_ok)
 	STRCMP_EQUAL("c", pconf.pin_irq_name);
 	CHECK_EQUAL(2, pconf.pin_irq_edge);
 	CHECK_EQUAL(300, pconf.pin_irq);
+	CHECK_EQUAL(1, pconf.pin_irq_active_low);
 }
 
 TEST(conf, test_pconf_complete_ok)
@@ -371,4 +373,5 @@ TEST(conf, test_pconf_complete_ok)
 	STRCMP_EQUAL(NULL, pconf.pin_irq_name);
 	CHECK_EQUAL(0, pconf.pin_irq_edge);
 	CHECK_EQUAL(0, pconf.pin_irq);
+	CHECK_EQUAL(0, pconf.pin_irq_active_low);
 }

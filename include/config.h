@@ -146,6 +146,7 @@ static inline int cfg_radio_read(struct cfg_radio *c)
 #define PLAT_TAG_GPIO_IRQ	"irq_gpio"
 #define PLAT_TAG_GPIO_IRQ_EDGE	"irq_edge"
 #define PLAT_TAG_GPIO_IRQ_NAME	"irq_name"
+#define PLAT_TAG_GPIO_IRQ_ALOW	"irq_active_low"
 
 #define PLAT_TAG_SPIDEV		"spidev"
 #define PLAT_TAG_SPIDEV_NAME	"name"
@@ -165,6 +166,7 @@ struct cfg_platform {
 	char *pin_csn_name;
 	int pin_irq;
 	int pin_irq_edge;
+	int pin_irq_active_low;
 	char *pin_irq_name;
 
 	char *spidev;
@@ -190,6 +192,7 @@ static inline void cfg_platform_init(struct cfg_platform *c)
 	c->pin_irq_name = NULL;
 	c->pin_irq_edge = 0;
 	c->pin_irq = 0;
+	c->pin_irq_active_low = 0;
 
 	c->spidev = (char *)DFLT_SPIDEV;
 	c->speed = 1000000;
