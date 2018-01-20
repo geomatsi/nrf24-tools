@@ -90,7 +90,7 @@ PATHS /usr/include
 
 FIND_PATH(FTDI_INCLUDE_DIR
 NAMES ftdi.h
-PATHS /usr/include
+PATHS /usr/include /usr/include/libftdi1
 )
 
 FIND_PATH(JSON_INCLUDE_DIR
@@ -121,7 +121,7 @@ PATHS /usr/lib /usr/local/lib
 )
 
 FIND_LIBRARY(FTDI_LIBRARY
-NAMES ftdi
+NAMES ftdi ftdi1
 PATHS /usr/lib /usr/lib/x86_64-linux-gnu
 )
 
